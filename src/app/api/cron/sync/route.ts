@@ -4,6 +4,7 @@ import { runSync } from '@/lib/sync/run'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // sync moves ~24k CSAT rows; give it headroom
 
 // Scheduled sync, triggered by an Upstash QStash schedule.
 // We verify QStash's request signature here rather than wrapping the handler at

@@ -36,7 +36,7 @@ const supabase = createClient(
   { auth: { persistSession: false } },
 )
 
-const CHUNK = 500
+const CHUNK = 1000
 
 for (const s of SOURCES) {
   try {

@@ -37,7 +37,7 @@ function a1(tab: string, range: string): string {
   return `'${tab.replace(/'/g, "''")}'!${range}`
 }
 
-const CHUNK = 500
+const CHUNK = 1000 // fewer round-trips so the serverless sync finishes in time
 type Admin = ReturnType<typeof createAdminClient>
 
 async function syncOne(supabase: Admin, src: SheetSource): Promise<SourceResult> {
