@@ -19,7 +19,10 @@ export type SheetSource = {
 
 export const SPREADSHEET_ID = process.env.SHEET_LEANR_ID ?? ''
 
-// Example for later:
-//   { table: 'coaches', tab: 'Team',   range: 'A:C', mode: 'replace' },
-//   { table: 'sales',   tab: 'Sales',  range: 'A:M', mode: 'replace' },
-export const SOURCES: SheetSource[] = []
+// Raw tabs mirrored into raw_* tables; transform views shape them for the dashboard.
+export const SOURCES: SheetSource[] = [
+  { table: 'raw_team', tab: 'Team', range: 'A:C', mode: 'replace' },
+  { table: 'raw_clients', tab: 'Clients', range: 'A:AH', mode: 'replace' },
+  { table: 'raw_csat', tab: 'CSAT', range: 'A:I', mode: 'replace' },
+  { table: 'raw_overall_sales', tab: 'Overall Sales', range: 'A:M', mode: 'replace' },
+]

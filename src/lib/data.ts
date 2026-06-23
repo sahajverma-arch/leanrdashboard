@@ -8,7 +8,28 @@ export type DashData = {
   csat: Csat[]
 }
 
-// Fetch all four tables once. Shared by every page (the dataset is small).
+const PAGE = 1000
+
+// Supabase caps each API response at 1000 rows, so page through with .range()
+// to get the full table (CSAT is ~24k rows).
+async function fetchAll<T>(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table: string,
+): Promise<{ data?: T[]; error?: string }> {
+  const all: T[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .range(from, from + PAGE - 1)
+    if (error) return { error: error.message }
+    all.push(...((data ?? []) as T[]))
+    if (!data || data.length < PAGE) break
+  }
+  return { data: all }
+}
+
+// Fetch all four tables (paged). Aggregation happens server-side in the pages.
 export async function getData(): Promise<{ data?: DashData; error?: string }> {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -19,22 +40,21 @@ export async function getData(): Promise<{ data?: DashData; error?: string }> {
 
   const supabase = await createClient()
   const [coaches, clients, sales, csat] = await Promise.all([
-    supabase.from('coaches').select('*'),
-    supabase.from('clients').select('*'),
-    supabase.from('sales').select('*'),
-    supabase.from('csat').select('*'),
+    fetchAll<Coach>(supabase, 'coaches'),
+    fetchAll<Client>(supabase, 'clients'),
+    fetchAll<Sale>(supabase, 'sales'),
+    fetchAll<Csat>(supabase, 'csat'),
   ])
 
-  const error =
-    coaches.error || clients.error || sales.error || csat.error
-  if (error) return { error: error.message }
+  const error = coaches.error || clients.error || sales.error || csat.error
+  if (error) return { error }
 
   return {
     data: {
-      coaches: (coaches.data ?? []) as Coach[],
-      clients: (clients.data ?? []) as Client[],
-      sales: (sales.data ?? []) as Sale[],
-      csat: (csat.data ?? []) as Csat[],
+      coaches: coaches.data ?? [],
+      clients: clients.data ?? [],
+      sales: sales.data ?? [],
+      csat: csat.data ?? [],
     },
   }
 }
