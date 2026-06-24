@@ -4,35 +4,7 @@ import { runSync } from '@/lib/sync/run'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
-
-// TEMP diagnostic — reports env presence + actual sync errors. Remove after debugging.
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  if (searchParams.get('diag') !== 'leanr-diag-7x9') {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-  let b64DecodedLen = -1
-  let b64StartsOk = false
-  try {
-    const dec = Buffer.from(process.env.GOOGLE_PRIVATE_KEY_B64 || '', 'base64').toString('utf8')
-    b64DecodedLen = dec.length
-    b64StartsOk = dec.startsWith('-----BEGIN PRIVATE KEY-----')
-  } catch {
-    /* ignore */
-  }
-  const env = {
-    marker: 'b64-v3',
-    GOOGLE_PRIVATE_KEY_B64_present: !!process.env.GOOGLE_PRIVATE_KEY_B64,
-    GOOGLE_PRIVATE_KEY_B64_decoded_len: b64DecodedLen,
-    GOOGLE_PRIVATE_KEY_B64_decodes_to_pem: b64StartsOk,
-    GOOGLE_PRIVATE_KEY_unescaped_len: (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n').length,
-    SHEET_LEANR_ID: process.env.SHEET_LEANR_ID || null,
-  }
-  const { runSync } = await import('@/lib/sync/run')
-  const result = await runSync()
-  return NextResponse.json({ env, result })
-} // sync moves ~24k CSAT rows; give it headroom
+export const maxDuration = 60 // sync moves ~24k CSAT rows; give it headroom
 
 // Scheduled sync, triggered by an Upstash QStash schedule.
 // We verify QStash's request signature here rather than wrapping the handler at
