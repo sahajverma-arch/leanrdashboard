@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -15,6 +15,8 @@ const LINKS = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const qs = searchParams.toString() // carry the active filters across nav
   const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function Sidebar() {
           return (
             <Link
               key={l.href}
-              href={l.href}
+              href={qs ? `${l.href}?${qs}` : l.href}
               className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 active
                   ? 'bg-blue-600 text-white'

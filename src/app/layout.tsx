@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/sidebar";
@@ -30,7 +31,9 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 md:flex-row">
-          <Sidebar />
+          <Suspense>
+            <Sidebar />
+          </Suspense>
           <main className="flex-1 px-4 py-6 lg:px-8">{children}</main>
         </div>
       </body>
