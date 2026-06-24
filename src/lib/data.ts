@@ -49,15 +49,11 @@ export async function getDashboard(
 
   const supabase = await createClient()
 
-  const [coachesR, clientsR, salesR] = await Promise.all([
+  // Run all five queries in parallel — page time ≈ the slowest one.
+  const [coachesR, clientsR, salesR, csatR, optsR] = await Promise.all([
     fetchAll<Coach>(supabase, 'coaches'),
     fetchAll<Client>(supabase, 'clients'),
     fetchAll<Sale>(supabase, 'sales'),
-  ])
-  const fetchErr = coachesR.error || clientsR.error || salesR.error
-  if (fetchErr) return { error: fetchErr }
-
-  const [csatR, optsR] = await Promise.all([
     supabase.rpc('csat_stats', {
       p_start: f.start ?? null,
       p_end: f.end ?? null,
@@ -65,7 +61,9 @@ export async function getDashboard(
     }),
     supabase.rpc('filter_options'),
   ])
-  if (csatR.error) return { error: csatR.error.message }
+  const err =
+    coachesR.error || clientsR.error || salesR.error || csatR.error?.message
+  if (err) return { error: err }
 
   return {
     data: {
