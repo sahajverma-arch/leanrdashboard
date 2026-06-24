@@ -3,7 +3,7 @@ import { parseFilters } from '@/lib/filters'
 import FilterBar from '@/components/filter-bar'
 import { PageHeader, Kpi, Panel, SetupNotice } from '@/components/ui'
 import { StatusPieChart, CountBarChart } from '@/components/charts'
-import { clientsByStatus, clientsByPlan, clientsWithNames, avgWeightLost } from '@/lib/dashboard'
+import { clientsByStatus, clientsByPlan, clientsWithNames, avgWeightLost, topN } from '@/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,8 +41,8 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
         <Panel title="Clients by status">
           <StatusPieChart data={clientsByStatus(clients)} />
         </Panel>
-        <Panel title="Clients by plan">
-          <CountBarChart data={clientsByPlan(clients)} color="#2563eb" />
+        <Panel title="Clients by plan (top 12)">
+          <CountBarChart data={topN(clientsByPlan(clients), 12)} color="#2563eb" />
         </Panel>
       </div>
 

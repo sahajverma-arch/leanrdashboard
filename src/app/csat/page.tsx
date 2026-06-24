@@ -15,7 +15,7 @@ export default async function CsatPage({ searchParams }: { searchParams: SP }) {
 
   const { csat, options } = data
   const happyPct = csat.count ? (csat.happy / csat.count) * 100 : 0
-  const byCoach = csat.byCoach.slice(0, 20).map((c) => ({ name: c.name, value: c.value }))
+  const byCoach = csat.byCoach.slice(0, 12).map((c) => ({ name: c.name, value: c.value }))
 
   return (
     <>
@@ -36,7 +36,7 @@ export default async function CsatPage({ searchParams }: { searchParams: SP }) {
         <Panel title="Rating distribution">
           <CountBarChart data={csat.distribution} color="#16a34a" />
         </Panel>
-        <Panel title="Top coaches by CSAT (≥5 ratings)">
+        <Panel title="Top 12 coaches by CSAT">
           <CsatBarChart data={byCoach} />
         </Panel>
         <Panel title="Avg CSAT by category">

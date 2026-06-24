@@ -57,6 +57,15 @@ export function formatNumber(n: number): string {
   return n.toLocaleString('en-IN', { maximumFractionDigits: 1 })
 }
 
+// Keep the top N categories by value; roll everything else into "Other".
+export function topN(data: NameValue[], n = 12): NameValue[] {
+  if (data.length <= n) return data
+  const sorted = [...data].sort((a, b) => b.value - a.value)
+  const rest = sorted.slice(n)
+  const other = rest.reduce((s, d) => s + d.value, 0)
+  return [...sorted.slice(0, n), { name: `Other (${rest.length})`, value: other }]
+}
+
 export function computeKpis(
   coaches: Coach[],
   clients: Client[],

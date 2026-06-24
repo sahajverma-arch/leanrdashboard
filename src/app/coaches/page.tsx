@@ -17,7 +17,7 @@ export default async function CoachesPage({ searchParams }: { searchParams: SP }
   const { coaches, clients, sales, csat, options } = data
   const k = computeKpis(coaches, clients, sales, csat)
   const rows = coachBreakdown(coaches, clients, sales, csat)
-  const csatByCoach = csat.byCoach.slice(0, 20).map((c) => ({ name: c.name, value: c.value }))
+  const csatByCoach = csat.byCoach.slice(0, 12).map((c) => ({ name: c.name, value: c.value }))
 
   return (
     <>
@@ -32,10 +32,10 @@ export default async function CoachesPage({ searchParams }: { searchParams: SP }
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel title="Top coaches by revenue">
-          <RevenueBarChart data={revenueByCoach(coaches, sales).slice(0, 20)} />
+        <Panel title="Top 12 coaches by revenue">
+          <RevenueBarChart data={revenueByCoach(coaches, sales).slice(0, 12)} />
         </Panel>
-        <Panel title="Top coaches by CSAT (≥5 ratings)">
+        <Panel title="Top 12 coaches by CSAT">
           <CsatBarChart data={csatByCoach} />
         </Panel>
       </div>

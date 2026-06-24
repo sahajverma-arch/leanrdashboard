@@ -20,6 +20,10 @@ import type { NameValue } from '@/lib/dashboard'
 const COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#db2777', '#7c3aed', '#0891b2']
 
 const fmtINR = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN')
+const truncate = (v: unknown) => {
+  const s = String(v ?? '')
+  return s.length > 18 ? s.slice(0, 17) + '…' : s
+}
 
 export function RevenueLineChart({ data }: { data: NameValue[] }) {
   return (
@@ -42,6 +46,7 @@ export function RevenueBarChart({ data }: { data: NameValue[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
         <XAxis
           dataKey="name"
+          tickFormatter={truncate}
           tick={{ fontSize: 11 }}
           interval={0}
           angle={-25}
@@ -63,6 +68,7 @@ export function CsatBarChart({ data }: { data: NameValue[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
         <XAxis
           dataKey="name"
+          tickFormatter={truncate}
           tick={{ fontSize: 11 }}
           interval={0}
           angle={-25}
@@ -90,6 +96,7 @@ export function CountBarChart({
         <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
         <XAxis
           dataKey="name"
+          tickFormatter={truncate}
           tick={{ fontSize: 11 }}
           interval={0}
           angle={-25}

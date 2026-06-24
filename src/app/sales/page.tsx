@@ -9,6 +9,7 @@ import {
   revenueByType,
   recentSales,
   formatINR,
+  topN,
 } from '@/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
@@ -42,8 +43,8 @@ export default async function SalesPage({ searchParams }: { searchParams: SP }) 
         <Panel title="Revenue by month">
           <RevenueLineChart data={revenueByMonth(sales)} />
         </Panel>
-        <Panel title="Revenue by plan">
-          <RevenueBarChart data={revenueByPlan(sales)} />
+        <Panel title="Revenue by plan (top 12)">
+          <RevenueBarChart data={topN(revenueByPlan(sales), 12)} />
         </Panel>
         <Panel title="Revenue by sale type" className="lg:col-span-2">
           <RevenueBarChart data={revenueByType(sales)} />
