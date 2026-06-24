@@ -21,8 +21,8 @@ export const SPREADSHEET_ID = process.env.SHEET_LEANR_ID ?? ''
 
 // Raw tabs mirrored into raw_* tables; transform views shape them for the dashboard.
 export const SOURCES: SheetSource[] = [
-  { table: 'raw_team', tab: 'Team', range: 'A:C', mode: 'replace' },
+  // New "Leaner Dashboard" sheet has no Team tab; coaches derive from the data.
   { table: 'raw_clients', tab: 'Clients', range: 'A:AH', mode: 'replace' },
   { table: 'raw_csat', tab: 'CSAT', range: 'A:I', mode: 'replace' },
-  { table: 'raw_overall_sales', tab: 'Overall Sales', range: 'A:M', mode: 'replace' },
+  { table: 'raw_overall_sales', tab: 'Overall Sales', range: 'A:AL', mode: 'replace' },
 ]

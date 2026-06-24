@@ -6,10 +6,9 @@ import { google } from 'googleapis'
 import { createClient } from '@supabase/supabase-js'
 
 const SOURCES = [
-  { table: 'raw_team', tab: 'Team', range: 'A:C' },
   { table: 'raw_clients', tab: 'Clients', range: 'A:AH' },
   { table: 'raw_csat', tab: 'CSAT', range: 'A:I' },
-  { table: 'raw_overall_sales', tab: 'Overall Sales', range: 'A:M' },
+  { table: 'raw_overall_sales', tab: 'Overall Sales', range: 'A:AL' },
 ]
 
 const san = (h) =>
