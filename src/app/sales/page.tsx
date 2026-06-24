@@ -1,4 +1,6 @@
-import { getData } from '@/lib/data'
+import { getDashboard } from '@/lib/data'
+import { parseFilters } from '@/lib/filters'
+import FilterBar from '@/components/filter-bar'
 import { PageHeader, Kpi, Panel, SetupNotice } from '@/components/ui'
 import { RevenueLineChart, RevenueBarChart } from '@/components/charts'
 import {
@@ -11,11 +13,14 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-export default async function SalesPage() {
-  const { data, error } = await getData()
+type SP = Promise<Record<string, string | string[] | undefined>>
+
+export default async function SalesPage({ searchParams }: { searchParams: SP }) {
+  const f = parseFilters(await searchParams)
+  const { data, error } = await getDashboard(f)
   if (!data) return <SetupNotice error={error} />
 
-  const { coaches, clients, sales } = data
+  const { coaches, clients, sales, options } = data
   const totalRevenue = sales.reduce((s, x) => s + (Number(x.amount) || 0), 0)
   const avgSale = sales.length ? totalRevenue / sales.length : 0
   const thisMonth = revenueByMonth(sales).at(-1)
@@ -24,16 +29,13 @@ export default async function SalesPage() {
   return (
     <>
       <PageHeader title="Sales" subtitle="Revenue performance & recent deals" />
+      <FilterBar options={options} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi label="Total revenue" value={formatINR(totalRevenue)} />
-        <Kpi label="Total sales" value={String(sales.length)} />
+        <Kpi label="Total sales" value={sales.length.toLocaleString('en-IN')} />
         <Kpi label="Avg sale value" value={formatINR(avgSale)} />
-        <Kpi
-          label="Latest month"
-          value={thisMonth ? formatINR(thisMonth.value) : '—'}
-          sub={thisMonth?.name}
-        />
+        <Kpi label="Latest month" value={thisMonth ? formatINR(thisMonth.value) : '—'} sub={thisMonth?.name} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -68,7 +70,7 @@ export default async function SalesPage() {
                   <td className="py-2 pr-4 font-medium text-zinc-900">{r.client}</td>
                   <td className="py-2 pr-4 text-zinc-600">{r.coach}</td>
                   <td className="py-2 pr-4 text-zinc-600">{r.plan}</td>
-                  <td className="py-2 pr-4 text-zinc-600 capitalize">{r.type}</td>
+                  <td className="py-2 pr-4 capitalize text-zinc-600">{r.type}</td>
                   <td className="py-2 text-right tabular-nums">{formatINR(r.amount)}</td>
                 </tr>
               ))}

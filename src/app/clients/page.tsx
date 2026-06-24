@@ -1,14 +1,13 @@
-import { getData } from '@/lib/data'
+import { getDashboard } from '@/lib/data'
+import { parseFilters } from '@/lib/filters'
+import FilterBar from '@/components/filter-bar'
 import { PageHeader, Kpi, Panel, SetupNotice } from '@/components/ui'
 import { StatusPieChart, CountBarChart } from '@/components/charts'
-import {
-  clientsByStatus,
-  clientsByPlan,
-  clientsWithNames,
-  avgWeightLost,
-} from '@/lib/dashboard'
+import { clientsByStatus, clientsByPlan, clientsWithNames, avgWeightLost } from '@/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
+
+type SP = Promise<Record<string, string | string[] | undefined>>
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -16,21 +15,22 @@ const STATUS_STYLES: Record<string, string> = {
   cnr: 'bg-rose-100 text-rose-700',
 }
 
-export default async function ClientsPage() {
-  const { data, error } = await getData()
+export default async function ClientsPage({ searchParams }: { searchParams: SP }) {
+  const f = parseFilters(await searchParams)
+  const { data, error } = await getDashboard(f)
   if (!data) return <SetupNotice error={error} />
 
-  const { coaches, clients } = data
-  const counts = (status: string) =>
-    clients.filter((c) => c.status === status).length
+  const { coaches, clients, options } = data
+  const counts = (status: string) => clients.filter((c) => c.status === status).length
   const rows = clientsWithNames(clients, coaches)
 
   return (
     <>
       <PageHeader title="Clients" subtitle="Roster, status & plans" />
+      <FilterBar options={options} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Kpi label="Total" value={String(clients.length)} />
+        <Kpi label="Total" value={clients.length.toLocaleString('en-IN')} />
         <Kpi label="Active" value={String(counts('active'))} />
         <Kpi label="Paused" value={String(counts('paused'))} />
         <Kpi label="CNR" value={String(counts('cnr'))} />
@@ -46,7 +46,7 @@ export default async function ClientsPage() {
         </Panel>
       </div>
 
-      <Panel title="All clients" className="mt-4">
+      <Panel title={`Clients (${rows.length.toLocaleString('en-IN')})`} className="mt-4">
         <div className="max-h-[520px] overflow-auto">
           <table className="w-full text-sm">
             <thead>
@@ -65,11 +65,7 @@ export default async function ClientsPage() {
                   <td className="py-2 pr-4 text-zinc-600">{c.coach}</td>
                   <td className="py-2 pr-4 text-zinc-600">{c.plan}</td>
                   <td className="py-2 pr-4">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                        STATUS_STYLES[c.status] ?? 'bg-zinc-100 text-zinc-600'
-                      }`}
-                    >
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[c.status] ?? 'bg-zinc-100 text-zinc-600'}`}>
                       {c.status}
                     </span>
                   </td>

@@ -92,6 +92,12 @@ export async function runSync(): Promise<SyncResult> {
     }
   }
 
+  // Refresh the materialized coach map so views reflect the new data.
+  const { error: refreshErr } = await supabase.rpc('refresh_dashboard')
+  if (refreshErr) {
+    results.push({ table: 'refresh_dashboard', rows: 0, error: refreshErr.message })
+  }
+
   return {
     ok: results.length > 0 && results.every((r) => !r.error),
     results,

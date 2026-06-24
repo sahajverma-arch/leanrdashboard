@@ -77,4 +77,7 @@ for (const s of SOURCES) {
     console.error(`${s.table}: ERROR ${e.message}`)
   }
 }
+
+const { error: refreshErr } = await supabase.rpc('refresh_dashboard')
+console.log(refreshErr ? `refresh_dashboard ERROR: ${refreshErr.message}` : 'refreshed coach map')
 console.log('sync complete')

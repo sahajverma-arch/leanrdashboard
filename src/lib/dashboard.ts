@@ -35,6 +35,18 @@ export type Csat = {
 
 export type NameValue = { name: string; value: number }
 
+// CSAT aggregates computed in SQL (csat_stats RPC).
+export type CsatStats = {
+  count: number
+  avg: number
+  happy: number
+  detractors: number
+  byCoach: { id: number; name: string; value: number; n: number }[]
+  byCategory: NameValue[]
+  byMonth: NameValue[]
+  distribution: NameValue[]
+}
+
 export function formatINR(n: number): string {
   if (!Number.isFinite(n)) return '—'
   return '₹' + Math.round(n).toLocaleString('en-IN')
@@ -49,15 +61,11 @@ export function computeKpis(
   coaches: Coach[],
   clients: Client[],
   sales: Sale[],
-  csat: Csat[],
+  csat: CsatStats,
 ) {
   const totalClients = clients.length
   const activeClients = clients.filter((c) => c.status === 'active').length
   const totalRevenue = sales.reduce((s, x) => s + (Number(x.amount) || 0), 0)
-  const ratings = csat.map((c) => Number(c.rating)).filter((r) => Number.isFinite(r))
-  const avgCsat = ratings.length
-    ? ratings.reduce((a, b) => a + b, 0) / ratings.length
-    : 0
   return {
     totalCoaches: coaches.length,
     totalClients,
@@ -65,7 +73,8 @@ export function computeKpis(
     activeRate: totalClients ? (activeClients / totalClients) * 100 : 0,
     totalRevenue,
     totalSales: sales.length,
-    avgCsat,
+    avgCsat: csat.avg,
+    csatCount: csat.count,
   }
 }
 
@@ -258,29 +267,24 @@ export function coachBreakdown(
   coaches: Coach[],
   clients: Client[],
   sales: Sale[],
-  csat: Csat[],
+  csat: CsatStats,
 ): CoachRow[] {
+  const csatById = new Map(csat.byCoach.map((c) => [c.id, c.value]))
   return coaches
     .map((coach) => {
       const cClients = clients.filter((c) => c.coach_id === coach.id).length
       const cRevenue = sales
         .filter((s) => s.coach_id === coach.id)
         .reduce((s, x) => s + (Number(x.amount) || 0), 0)
-      const ratings = csat
-        .filter((c) => c.coach_id === coach.id)
-        .map((c) => Number(c.rating))
-        .filter((r) => Number.isFinite(r))
-      const avg = ratings.length
-        ? ratings.reduce((a, b) => a + b, 0) / ratings.length
-        : 0
       return {
         name: coach.name,
         role: coach.role ?? '—',
         team: coach.team ?? '—',
         clients: cClients,
         revenue: cRevenue,
-        avgCsat: avg,
+        avgCsat: csatById.get(coach.id) ?? 0,
       }
     })
+    .filter((r) => r.clients > 0 || r.revenue > 0) // hide coaches with no activity
     .sort((a, b) => b.revenue - a.revenue)
 }

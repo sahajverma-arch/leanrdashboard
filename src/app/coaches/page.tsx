@@ -1,52 +1,52 @@
-import { getData } from '@/lib/data'
+import { getDashboard } from '@/lib/data'
+import { parseFilters } from '@/lib/filters'
+import FilterBar from '@/components/filter-bar'
 import { PageHeader, Kpi, Panel, SetupNotice } from '@/components/ui'
 import { CsatBarChart, RevenueBarChart } from '@/components/charts'
-import {
-  computeKpis,
-  csatByCoach,
-  revenueByCoach,
-  coachBreakdown,
-  formatINR,
-} from '@/lib/dashboard'
+import { computeKpis, revenueByCoach, coachBreakdown, formatINR } from '@/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CoachesPage() {
-  const { data, error } = await getData()
+type SP = Promise<Record<string, string | string[] | undefined>>
+
+export default async function CoachesPage({ searchParams }: { searchParams: SP }) {
+  const f = parseFilters(await searchParams)
+  const { data, error } = await getDashboard(f)
   if (!data) return <SetupNotice error={error} />
 
-  const { coaches, clients, sales, csat } = data
+  const { coaches, clients, sales, csat, options } = data
   const k = computeKpis(coaches, clients, sales, csat)
   const rows = coachBreakdown(coaches, clients, sales, csat)
+  const csatByCoach = csat.byCoach.slice(0, 20).map((c) => ({ name: c.name, value: c.value }))
 
   return (
     <>
       <PageHeader title="Coaches" subtitle="Per-coach performance" />
+      <FilterBar options={options} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Coaches" value={String(k.totalCoaches)} />
-        <Kpi label="Clients / coach" value={(k.totalClients / (k.totalCoaches || 1)).toFixed(1)} />
+        <Kpi label="Active coaches" value={String(rows.length)} />
+        <Kpi label="Clients / coach" value={(k.totalClients / (rows.length || 1)).toFixed(1)} />
         <Kpi label="Total revenue" value={formatINR(k.totalRevenue)} />
         <Kpi label="Avg CSAT" value={`${k.avgCsat.toFixed(2)} / 5`} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel title="Revenue by coach">
-          <RevenueBarChart data={revenueByCoach(coaches, sales)} />
+        <Panel title="Top coaches by revenue">
+          <RevenueBarChart data={revenueByCoach(coaches, sales).slice(0, 20)} />
         </Panel>
-        <Panel title="Avg CSAT by coach">
-          <CsatBarChart data={csatByCoach(coaches, csat)} />
+        <Panel title="Top coaches by CSAT (≥5 ratings)">
+          <CsatBarChart data={csatByCoach} />
         </Panel>
       </div>
 
       <Panel title="Coach breakdown" className="mt-4">
-        <div className="overflow-x-auto">
+        <div className="max-h-[520px] overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-500">
                 <th className="py-2 pr-4 font-medium">Coach</th>
                 <th className="py-2 pr-4 font-medium">Role</th>
-                <th className="py-2 pr-4 font-medium">Team</th>
                 <th className="py-2 pr-4 text-right font-medium">Clients</th>
                 <th className="py-2 pr-4 text-right font-medium">Revenue</th>
                 <th className="py-2 text-right font-medium">Avg CSAT</th>
@@ -57,12 +57,9 @@ export default async function CoachesPage() {
                 <tr key={c.name} className="border-b border-zinc-100">
                   <td className="py-2 pr-4 font-medium text-zinc-900">{c.name}</td>
                   <td className="py-2 pr-4 text-zinc-600">{c.role}</td>
-                  <td className="py-2 pr-4 text-zinc-600">{c.team}</td>
                   <td className="py-2 pr-4 text-right tabular-nums">{c.clients}</td>
                   <td className="py-2 pr-4 text-right tabular-nums">{formatINR(c.revenue)}</td>
-                  <td className="py-2 text-right tabular-nums">
-                    {c.avgCsat ? c.avgCsat.toFixed(2) : '—'}
-                  </td>
+                  <td className="py-2 text-right tabular-nums">{c.avgCsat ? c.avgCsat.toFixed(2) : '—'}</td>
                 </tr>
               ))}
             </tbody>

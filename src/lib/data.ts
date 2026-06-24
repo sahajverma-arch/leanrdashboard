@@ -1,17 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Coach, Client, Sale, Csat } from './dashboard'
+import type { Coach, Client, Sale, CsatStats } from './dashboard'
+import {
+  type Filters,
+  type FilterOptions,
+  filterClients,
+  filterSales,
+} from './filters'
 
 export type DashData = {
   coaches: Coach[]
   clients: Client[]
   sales: Sale[]
-  csat: Csat[]
+  csat: CsatStats
+  options: FilterOptions
 }
 
 const PAGE = 1000
 
-// Supabase caps each API response at 1000 rows, so page through with .range()
-// to get the full table (CSAT is ~24k rows).
+// Page through Supabase's 1000-row response cap.
 async function fetchAll<T>(
   supabase: Awaited<ReturnType<typeof createClient>>,
   table: string,
@@ -29,8 +35,11 @@ async function fetchAll<T>(
   return { data: all }
 }
 
-// Fetch all four tables (paged). Aggregation happens server-side in the pages.
-export async function getData(): Promise<{ data?: DashData; error?: string }> {
+// Fetch the small tables (coaches/clients/sales) fully and filter them in JS,
+// but aggregate the large CSAT table in SQL (csat_stats RPC) to stay fast.
+export async function getDashboard(
+  f: Filters,
+): Promise<{ data?: DashData; error?: string }> {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -39,22 +48,32 @@ export async function getData(): Promise<{ data?: DashData; error?: string }> {
   }
 
   const supabase = await createClient()
-  const [coaches, clients, sales, csat] = await Promise.all([
+
+  const [coachesR, clientsR, salesR] = await Promise.all([
     fetchAll<Coach>(supabase, 'coaches'),
     fetchAll<Client>(supabase, 'clients'),
     fetchAll<Sale>(supabase, 'sales'),
-    fetchAll<Csat>(supabase, 'csat'),
   ])
+  const fetchErr = coachesR.error || clientsR.error || salesR.error
+  if (fetchErr) return { error: fetchErr }
 
-  const error = coaches.error || clients.error || sales.error || csat.error
-  if (error) return { error }
+  const [csatR, optsR] = await Promise.all([
+    supabase.rpc('csat_stats', {
+      p_start: f.start ?? null,
+      p_end: f.end ?? null,
+      p_coach_id: f.coachId ?? null,
+    }),
+    supabase.rpc('filter_options'),
+  ])
+  if (csatR.error) return { error: csatR.error.message }
 
   return {
     data: {
-      coaches: coaches.data ?? [],
-      clients: clients.data ?? [],
-      sales: sales.data ?? [],
-      csat: csat.data ?? [],
+      coaches: coachesR.data ?? [],
+      clients: filterClients(clientsR.data ?? [], f),
+      sales: filterSales(salesR.data ?? [], f),
+      csat: csatR.data as CsatStats,
+      options: (optsR.data as FilterOptions) ?? { coaches: [], plans: [], statuses: [] },
     },
   }
 }
