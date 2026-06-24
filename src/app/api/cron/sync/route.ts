@@ -12,13 +12,22 @@ export async function GET(req: Request) {
   if (searchParams.get('diag') !== 'leanr-diag-7x9') {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
+  let b64DecodedLen = -1
+  let b64StartsOk = false
+  try {
+    const dec = Buffer.from(process.env.GOOGLE_PRIVATE_KEY_B64 || '', 'base64').toString('utf8')
+    b64DecodedLen = dec.length
+    b64StartsOk = dec.startsWith('-----BEGIN PRIVATE KEY-----')
+  } catch {
+    /* ignore */
+  }
   const env = {
-    NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || null,
+    marker: 'b64-v3',
+    GOOGLE_PRIVATE_KEY_B64_present: !!process.env.GOOGLE_PRIVATE_KEY_B64,
+    GOOGLE_PRIVATE_KEY_B64_decoded_len: b64DecodedLen,
+    GOOGLE_PRIVATE_KEY_B64_decodes_to_pem: b64StartsOk,
     GOOGLE_PRIVATE_KEY_unescaped_len: (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n').length,
     SHEET_LEANR_ID: process.env.SHEET_LEANR_ID || null,
-    QSTASH_CURRENT_SIGNING_KEY: !!process.env.QSTASH_CURRENT_SIGNING_KEY,
   }
   const { runSync } = await import('@/lib/sync/run')
   const result = await runSync()
