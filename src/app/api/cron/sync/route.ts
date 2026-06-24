@@ -4,7 +4,26 @@ import { runSync } from '@/lib/sync/run'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // sync moves ~24k CSAT rows; give it headroom
+export const maxDuration = 60
+
+// TEMP diagnostic — reports env presence + actual sync errors. Remove after debugging.
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  if (searchParams.get('diag') !== 'leanr-diag-7x9') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+  const env = {
+    NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || null,
+    GOOGLE_PRIVATE_KEY_unescaped_len: (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n').length,
+    SHEET_LEANR_ID: process.env.SHEET_LEANR_ID || null,
+    QSTASH_CURRENT_SIGNING_KEY: !!process.env.QSTASH_CURRENT_SIGNING_KEY,
+  }
+  const { runSync } = await import('@/lib/sync/run')
+  const result = await runSync()
+  return NextResponse.json({ env, result })
+} // sync moves ~24k CSAT rows; give it headroom
 
 // Scheduled sync, triggered by an Upstash QStash schedule.
 // We verify QStash's request signature here rather than wrapping the handler at
