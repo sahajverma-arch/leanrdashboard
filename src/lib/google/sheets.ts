@@ -4,20 +4,22 @@ export type CellValue = string | number | boolean | null
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
+function privateKey(): string {
+  // Prefer base64 (immune to newline/quote/whitespace mangling in env UIs).
+  const b64 = process.env.GOOGLE_PRIVATE_KEY_B64
+  if (b64) return Buffer.from(b64, 'base64').toString('utf8')
+  return (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+}
+
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-  const key = process.env.GOOGLE_PRIVATE_KEY
+  const key = privateKey()
   if (!email || !key) {
     throw new Error(
-      'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_PRIVATE_KEY env vars.',
+      'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_PRIVATE_KEY(_B64).',
     )
   }
-  return new google.auth.JWT({
-    email,
-    // Env-stored keys keep literal "\n"; convert back to real newlines.
-    key: key.replace(/\\n/g, '\n'),
-    scopes: SCOPES,
-  })
+  return new google.auth.JWT({ email, key, scopes: SCOPES })
 }
 
 // Read an A1 range and return the raw 2-D array of cell values.

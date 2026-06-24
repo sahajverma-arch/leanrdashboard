@@ -24,7 +24,9 @@ function headerKeys(row) {
 }
 
 const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+const key = process.env.GOOGLE_PRIVATE_KEY_B64
+  ? Buffer.from(process.env.GOOGLE_PRIVATE_KEY_B64, 'base64').toString('utf8')
+  : (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
 const auth = new google.auth.JWT({ email, key, scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'] })
 const sheets = google.sheets({ version: 'v4', auth })
 const ID = process.env.SHEET_LEANR_ID
