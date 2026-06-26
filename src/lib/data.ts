@@ -104,6 +104,7 @@ export type CoachOpportunityRow = {
   extension_opp: string | null
   purchase_w: string | null
   purchase_x: string | null
+  start_date: string | null
 }
 
 // Per-client renewal/extension opportunity rows (from raw_data_coaches_opportunity).

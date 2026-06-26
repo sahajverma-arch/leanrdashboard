@@ -175,6 +175,7 @@ type OpportunityRow = {
   extension_opp: string
   purchase_w: string
   purchase_x: string
+  start_date: string
 }
 
 // raw_data_coaches_opportunity has several blank header cells (which would all
@@ -199,6 +200,7 @@ function parseCoachOpportunity(values: CellValue[][]): OpportunityRow[] {
       extension_opp,
       purchase_w: s(22), // W
       purchase_x: s(23), // X
+      start_date: s(3), // D
     })
   }
   return out

@@ -96,6 +96,7 @@ export type OppRow = {
   extension_opp: string | null
   purchase_w: string | null
   purchase_x: string | null
+  start_date: string | null
 }
 
 export type CoachOppStat = {
