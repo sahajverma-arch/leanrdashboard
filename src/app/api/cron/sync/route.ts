@@ -34,6 +34,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
+  // Verified QStash request. Log the trigger (message id + retry count) so the
+  // run is identifiable in Vercel's logs and we can tell first-tries from retries.
+  const messageId = req.headers.get('upstash-message-id') ?? 'unknown'
+  const retried = req.headers.get('upstash-retried') ?? '0'
+  console.log(`[cron/sync] triggered by QStash — message ${messageId}, retry ${retried}`)
+
+  const startedAt = Date.now()
   const result = await runSync()
+  const elapsedSec = Math.round((Date.now() - startedAt) / 1000)
+  const summary = Object.fromEntries(
+    result.results.map((r) => [r.table, r.error ? `ERROR: ${r.error}` : r.rows]),
+  )
+  console.log(`[cron/sync] done in ${elapsedSec}s — ok=${result.ok}`, summary)
+
   return NextResponse.json(result, { status: result.ok ? 200 : 207 })
 }
