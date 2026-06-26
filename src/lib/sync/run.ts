@@ -75,6 +75,99 @@ async function syncOne(supabase: Admin, src: SheetSource): Promise<SourceResult>
   return { table: src.table, rows: written }
 }
 
+const MONTHS: Record<string, number> = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+}
+const MONTH_RE = /^([A-Za-z]+)\s*-\s*(\d{4})$/
+
+type LeanrRow = {
+  month: string
+  extention: number
+  renew: number
+  reactivation: number
+  reference: number
+  total: number
+  sale: number
+}
+
+// Unpivot the Sales_LeanrTeam sheet: month labels in a row, sub-headers one row
+// below, values two rows below — in month-blocks across columns, stacked down.
+function parseLeanrPivot(values: CellValue[][]): LeanrRow[] {
+  const out: LeanrRow[] = []
+  const num = (x: CellValue) => {
+    const n = Number(x)
+    return Number.isFinite(n) ? Math.round(n) : 0
+  }
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i] ?? []
+    const labels: { c: number; month: string }[] = []
+    row.forEach((cell, c) => {
+      const m = MONTH_RE.exec(String(cell ?? '').trim())
+      if (m) {
+        const mm = MONTHS[m[1].toLowerCase()]
+        if (mm) labels.push({ c, month: `${m[2]}-${String(mm).padStart(2, '0')}` })
+      }
+    })
+    if (!labels.length) continue
+    const vals = values[i + 2] ?? []
+    const saleRow = values[i + 6] ?? [] // the "Total | Count | Sale" row; Sale at c+3
+    for (const { c, month } of labels) {
+      out.push({
+        month,
+        extention: num(vals[c]),
+        renew: num(vals[c + 1]),
+        reactivation: num(vals[c + 2]),
+        reference: num(vals[c + 3]),
+        total: num(vals[c + 4]),
+        sale: num(saleRow[c + 3]),
+      })
+    }
+  }
+  return out
+}
+
+async function syncLeanrTeam(supabase: Admin): Promise<SourceResult> {
+  const values = await readRange(SPREADSHEET_ID, a1('Sales_LeanrTeam', 'A1:BZ80'))
+  const months = parseLeanrPivot(values)
+  const { error: delErr } = await supabase.from('raw_sales_leanr_team').delete().gte('id', 0)
+  if (delErr) throw new Error(delErr.message)
+  if (months.length) {
+    const { error } = await supabase.from('raw_sales_leanr_team').insert(months)
+    if (error) throw new Error(error.message)
+  }
+  return { table: 'raw_sales_leanr_team', rows: months.length }
+}
+
+type CoachSaleRow = { coach_type: string; coach: string; amount: number }
+
+// Leaner_Team_Sales is a flat list grouped by type: col A = type label,
+// col B = 'Name ECODE', col C = this month's sale value. Blank rows separate
+// the type blocks — skip any row missing a type or coach name.
+function parseLeanerTeam(values: CellValue[][]): CoachSaleRow[] {
+  const out: CoachSaleRow[] = []
+  for (const row of values) {
+    const coachType = String(row?.[0] ?? '').trim()
+    const coach = String(row?.[1] ?? '').trim()
+    if (!coachType || !coach) continue
+    const amount = Number(row?.[2])
+    out.push({ coach_type: coachType, coach, amount: Number.isFinite(amount) ? amount : 0 })
+  }
+  return out
+}
+
+async function syncLeanerTeamSales(supabase: Admin): Promise<SourceResult> {
+  const values = await readRange(SPREADSHEET_ID, a1('Leaner_Team_Sales', 'A:C'))
+  const rows = parseLeanerTeam(values)
+  const { error: delErr } = await supabase.from('raw_leaner_team_sales').delete().gte('id', 0)
+  if (delErr) throw new Error(delErr.message)
+  if (rows.length) {
+    const { error } = await supabase.from('raw_leaner_team_sales').insert(rows)
+    if (error) throw new Error(error.message)
+  }
+  return { table: 'raw_leaner_team_sales', rows: rows.length }
+}
+
 // Read every configured sheet and write it into Postgres.
 export async function runSync(): Promise<SyncResult> {
   const supabase = createAdminClient()
@@ -90,6 +183,28 @@ export async function runSync(): Promise<SyncResult> {
         error: e instanceof Error ? e.message : String(e),
       })
     }
+  }
+
+  // Sales_LeanrTeam is a monthly pivot — parse it into raw_sales_leanr_team.
+  try {
+    results.push(await syncLeanrTeam(supabase))
+  } catch (e) {
+    results.push({
+      table: 'raw_sales_leanr_team',
+      rows: 0,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+
+  // Leaner_Team_Sales is a flat per-coach list — parse it into raw_leaner_team_sales.
+  try {
+    results.push(await syncLeanerTeamSales(supabase))
+  } catch (e) {
+    results.push({
+      table: 'raw_leaner_team_sales',
+      rows: 0,
+      error: e instanceof Error ? e.message : String(e),
+    })
   }
 
   // Refresh the materialized coach map so views reflect the new data.

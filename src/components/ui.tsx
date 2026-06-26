@@ -1,5 +1,56 @@
 // Plain presentational components shared across pages (no client interactivity).
 
+import { formatINR, type TopCoach } from '@/lib/dashboard'
+
+const TYPE_LABEL: Record<string, string> = {
+  pt: 'PT Coach',
+  dietitian: 'Dietitian',
+  basic: 'Basic Coach',
+}
+
+// Ranked list of top coaches by sale amount. `showType` adds a per-row type tag
+// (used on the Overview, where the list mixes all coach types).
+export function TopCoaches({
+  title,
+  subtitle,
+  items,
+  showType = false,
+}: {
+  title: string
+  subtitle?: string
+  items: TopCoach[]
+  showType?: boolean
+}) {
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-zinc-700">{title}</h2>
+      {subtitle && <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p>}
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-400">No sales yet.</p>
+      ) : (
+        <ol className="mt-3 space-y-2">
+          {items.map((it, i) => (
+            <li key={`${it.name}-${i}`} className="flex items-center gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-zinc-900">{it.name}</div>
+                {showType && (
+                  <div className="text-xs text-zinc-500">{TYPE_LABEL[it.type] ?? it.type}</div>
+                )}
+              </div>
+              <div className="shrink-0 text-sm font-semibold text-zinc-900">
+                {formatINR(it.amount)}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )
+}
+
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-5">

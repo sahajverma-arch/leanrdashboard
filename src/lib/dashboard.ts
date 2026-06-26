@@ -6,6 +6,7 @@ export type Coach = {
   role: string | null
   team: string | null
   status: string | null
+  type?: string | null // 'pt' | 'dietitian' | 'basic' (from the coach sheets)
 }
 export type Client = {
   id: number
@@ -64,6 +65,26 @@ export function topN(data: NameValue[], n = 12): NameValue[] {
   const rest = sorted.slice(n)
   const other = rest.reduce((s, d) => s + d.value, 0)
   return [...sorted.slice(0, n), { name: `Other (${rest.length})`, value: other }]
+}
+
+// Per-coach current-month sales (from the Leaner_Team_Sales tab).
+export type CoachSale = { coach: string; type: string; amount: number }
+export type TopCoach = { name: string; type: string; amount: number }
+
+// Strip the trailing employee code from a coach name for display:
+// "Payal E4595" -> "Payal", "Himneesh E-056" -> "Himneesh", "Vineet C0136" -> "Vineet".
+export function coachDisplayName(name: string): string {
+  return String(name).replace(/\s+[A-Za-z]{0,2}-?\d+\s*$/, '').trim() || String(name).trim()
+}
+
+// Top N coaches by sale amount, optionally restricted to one type
+// ('pt' | 'basic' | 'dietitian'). Drops coaches with no sales.
+export function topCoaches(rows: CoachSale[], n = 3, type?: string): TopCoach[] {
+  return rows
+    .filter((r) => Number(r.amount) > 0 && (!type || r.type === type))
+    .sort((a, b) => Number(b.amount) - Number(a.amount))
+    .slice(0, n)
+    .map((r) => ({ name: coachDisplayName(r.coach), type: r.type, amount: Number(r.amount) }))
 }
 
 export function computeKpis(

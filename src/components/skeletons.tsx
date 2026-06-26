@@ -44,12 +44,14 @@ export function DashboardSkeleton({
   panels = 2,
   wideLastPanel = false,
   table = false,
+  filter = true,
 }: {
   kpis?: number
   kpiCols?: string
   panels?: number
   wideLastPanel?: boolean
   table?: boolean
+  filter?: boolean
 }) {
   return (
     <>
@@ -60,7 +62,7 @@ export function DashboardSkeleton({
       </div>
 
       {/* Filter bar */}
-      <Shimmer className="mb-4 h-12 w-full" />
+      {filter && <Shimmer className="mb-4 h-12 w-full" />}
 
       {/* KPI row */}
       <div className={`grid grid-cols-2 gap-3 ${kpiCols}`}>
@@ -70,14 +72,16 @@ export function DashboardSkeleton({
       </div>
 
       {/* Chart panels */}
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {Array.from({ length: panels }).map((_, i) => (
-          <PanelSkeleton
-            key={i}
-            className={wideLastPanel && i === panels - 1 ? 'lg:col-span-2' : ''}
-          />
-        ))}
-      </div>
+      {panels > 0 && (
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {Array.from({ length: panels }).map((_, i) => (
+            <PanelSkeleton
+              key={i}
+              className={wideLastPanel && i === panels - 1 ? 'lg:col-span-2' : ''}
+            />
+          ))}
+        </div>
+      )}
 
       {table && <TableSkeleton />}
     </>

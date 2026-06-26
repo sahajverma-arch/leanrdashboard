@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Coach, Client, Sale, CsatStats } from './dashboard'
+import type { Coach, Client, Sale, CsatStats, CoachSale } from './dashboard'
 import {
   type Filters,
   type FilterOptions,
@@ -74,4 +74,36 @@ export async function getDashboard(
       options: (optsR.data as FilterOptions) ?? { coaches: [], plans: [], statuses: [] },
     },
   }
+}
+
+export type LeanrMonth = {
+  month: string // 'YYYY-MM'
+  extention: number
+  renew: number
+  reactivation: number
+  reference: number
+  total: number
+  sale: number // total revenue (₹) for the month
+}
+
+// Pre-aggregated monthly "Sales by LEANR Team" numbers (from the pivot sheet).
+export async function getLeanrTeamSales(): Promise<LeanrMonth[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('raw_sales_leanr_team')
+    .select('month, extention, renew, reactivation, reference, total, sale')
+    .order('month')
+  if (error) return []
+  return (data ?? []) as LeanrMonth[]
+}
+
+// Per-coach current-month sales (from the Leaner_Team_Sales tab), sorted high→low.
+export async function getCoachMonthSales(): Promise<CoachSale[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('coach_month_sales')
+    .select('coach, type, amount')
+    .order('amount', { ascending: false })
+  if (error) return []
+  return (data ?? []) as CoachSale[]
 }

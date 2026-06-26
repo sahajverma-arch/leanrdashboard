@@ -1,84 +1,39 @@
-import { getDashboard } from '@/lib/data'
-import { parseFilters } from '@/lib/filters'
-import FilterBar from '@/components/filter-bar'
-import { PageHeader, Kpi, Panel, SetupNotice } from '@/components/ui'
-import { RevenueLineChart, RevenueBarChart } from '@/components/charts'
-import {
-  revenueByMonth,
-  revenueByPlan,
-  revenueByType,
-  recentSales,
-  formatINR,
-  topN,
-} from '@/lib/dashboard'
+import { getDashboard, getLeanrTeamSales, getCoachMonthSales } from '@/lib/data'
+import SalesView from '@/components/sales-view'
+import { SetupNotice, TopCoaches } from '@/components/ui'
+import { topCoaches } from '@/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
 
-type SP = Promise<Record<string, string | string[] | undefined>>
-
-export default async function SalesPage({ searchParams }: { searchParams: SP }) {
-  const f = parseFilters(await searchParams)
-  const { data, error } = await getDashboard(f)
+export default async function SalesPage() {
+  const [{ data, error }, leanrTeam, coachSales] = await Promise.all([
+    getDashboard({}),
+    getLeanrTeamSales(),
+    getCoachMonthSales(),
+  ])
   if (!data) return <SetupNotice error={error} />
 
-  const { coaches, clients, sales, options } = data
-  const totalRevenue = sales.reduce((s, x) => s + (Number(x.amount) || 0), 0)
-  const avgSale = sales.length ? totalRevenue / sales.length : 0
-  const thisMonth = revenueByMonth(sales).at(-1)
-  const rows = recentSales(sales, clients, coaches, 25)
+  const now = new Date()
+  const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const monthLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+
+  // Top 3 coaches by this month's sales, per type.
+  const topDietitians = topCoaches(coachSales, 3, 'dietitian')
+  const topPt = topCoaches(coachSales, 3, 'pt')
+  const topBasic = topCoaches(coachSales, 3, 'basic')
 
   return (
     <>
-      <PageHeader title="Sales" subtitle="Revenue performance & recent deals" />
-      <FilterBar options={options} />
+      <SalesView sales={data.sales} leanrTeam={leanrTeam} initialMonth={initialMonth} />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Total revenue" value={formatINR(totalRevenue)} />
-        <Kpi label="Total sales" value={sales.length.toLocaleString('en-IN')} />
-        <Kpi label="Avg sale value" value={formatINR(avgSale)} />
-        <Kpi label="Latest month" value={thisMonth ? formatINR(thisMonth.value) : '—'} sub={thisMonth?.name} />
+      <h2 className="mt-6 mb-3 text-sm font-semibold text-zinc-700">
+        Top coaches by sales · {monthLabel}
+      </h2>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <TopCoaches title="Dietitians" items={topDietitians} />
+        <TopCoaches title="PT Coaches" items={topPt} />
+        <TopCoaches title="Basic Coaches" items={topBasic} />
       </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel title="Revenue by month">
-          <RevenueLineChart data={revenueByMonth(sales)} />
-        </Panel>
-        <Panel title="Revenue by plan (top 12)">
-          <RevenueBarChart data={topN(revenueByPlan(sales), 12)} />
-        </Panel>
-        <Panel title="Revenue by sale type" className="lg:col-span-2">
-          <RevenueBarChart data={revenueByType(sales)} />
-        </Panel>
-      </div>
-
-      <Panel title="Recent sales" className="mt-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                <th className="py-2 pr-4 font-medium">Date</th>
-                <th className="py-2 pr-4 font-medium">Client</th>
-                <th className="py-2 pr-4 font-medium">Coach</th>
-                <th className="py-2 pr-4 font-medium">Plan</th>
-                <th className="py-2 pr-4 font-medium">Type</th>
-                <th className="py-2 text-right font-medium">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b border-zinc-100">
-                  <td className="py-2 pr-4 text-zinc-600">{r.date}</td>
-                  <td className="py-2 pr-4 font-medium text-zinc-900">{r.client}</td>
-                  <td className="py-2 pr-4 text-zinc-600">{r.coach}</td>
-                  <td className="py-2 pr-4 text-zinc-600">{r.plan}</td>
-                  <td className="py-2 pr-4 capitalize text-zinc-600">{r.type}</td>
-                  <td className="py-2 text-right tabular-nums">{formatINR(r.amount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
     </>
   )
 }
