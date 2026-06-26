@@ -10,7 +10,7 @@ export default async function OpportunityPage() {
   if (rows.length === 0) {
     return (
       <>
-        <PageHeader title="Opportunity" subtitle="Renewal & extension conversion by coach" />
+        <PageHeader title="Renewal opportunity" subtitle="By team & coach" />
         <Panel title="No opportunity data yet">
           <p className="text-sm text-zinc-500">
             Once the sync mirrors the{' '}

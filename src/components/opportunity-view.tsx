@@ -116,8 +116,8 @@ export default function OpportunityView({ rows, team }: { rows: OppRow[]; team: 
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-zinc-900">Opportunity</h1>
-          <p className="mt-0.5 text-sm text-zinc-500">Renewal opportunity by team &amp; coach</p>
+          <h1 className="text-xl font-bold text-zinc-900">Renewal opportunity</h1>
+          <p className="mt-0.5 text-sm text-zinc-500">By team &amp; coach</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-zinc-500">
           Plan start month
