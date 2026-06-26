@@ -87,6 +87,93 @@ export function topCoaches(rows: CoachSale[], n = 3, type?: string): TopCoach[] 
     .map((r) => ({ name: coachDisplayName(r.coach), type: r.type, amount: Number(r.amount) }))
 }
 
+// ---------- Renewal / extension opportunities (per coach) ----------
+
+export type OppRow = {
+  dietitian: string | null
+  exercise_coach: string | null
+  renewal_opp: string | null
+  extension_opp: string | null
+  purchase_w: string | null
+  purchase_x: string | null
+}
+
+export type CoachOppStat = {
+  coach: string // full 'Name ECODE' key
+  name: string // display name (code stripped)
+  renewalOpp: number
+  renewalConv: number
+  extOpp: number
+  extConv: number
+}
+
+const yes = (v: string | null | undefined) => String(v ?? '').toLowerCase().includes('yes')
+
+// An opportunity counts as "converted" when the latest purchase is a real plan —
+// i.e. NOT product-only, NOT a MIS entry, and NOT blank ('--'). Mirrors the
+// sheet's converted formula over columns W (purchase_w) and X (purchase_x).
+function oppConverted(w: string | null, x: string | null): boolean {
+  const lw = String(w ?? '').toLowerCase()
+  const lx = String(x ?? '').toLowerCase()
+  if (lw.includes('product') && lx.includes('product')) return false
+  if (lw.includes('mis') || lx.includes('mis')) return false
+  if (lw.includes('--')) return false
+  return true
+}
+
+// Per-coach renewal & extension opportunity / conversion counts. A row is
+// credited to BOTH its dietitian and its exercise coach (the sheet matches on
+// either column), de-duplicated so a coach filling both roles is counted once.
+export function coachOpportunities(rows: OppRow[]): CoachOppStat[] {
+  const map = new Map<string, CoachOppStat>()
+  for (const r of rows) {
+    const isRenewal = yes(r.renewal_opp)
+    const isExt = yes(r.extension_opp)
+    if (!isRenewal && !isExt) continue
+    const converted = oppConverted(r.purchase_w, r.purchase_x)
+    const coaches = [
+      ...new Set(
+        [r.dietitian, r.exercise_coach].map((c) => String(c ?? '').trim()).filter(Boolean),
+      ),
+    ]
+    for (const coach of coaches) {
+      const e =
+        map.get(coach) ??
+        { coach, name: coachDisplayName(coach), renewalOpp: 0, renewalConv: 0, extOpp: 0, extConv: 0 }
+      if (isRenewal) {
+        e.renewalOpp++
+        if (converted) e.renewalConv++
+      }
+      if (isExt) {
+        e.extOpp++
+        if (converted) e.extConv++
+      }
+      map.set(coach, e)
+    }
+  }
+  return [...map.values()]
+}
+
+// Unique (un-double-counted) totals straight from the rows, for the summary KPIs.
+export function opportunityTotals(rows: OppRow[]) {
+  let renewalOpp = 0,
+    renewalConv = 0,
+    extOpp = 0,
+    extConv = 0
+  for (const r of rows) {
+    const converted = oppConverted(r.purchase_w, r.purchase_x)
+    if (yes(r.renewal_opp)) {
+      renewalOpp++
+      if (converted) renewalConv++
+    }
+    if (yes(r.extension_opp)) {
+      extOpp++
+      if (converted) extConv++
+    }
+  }
+  return { renewalOpp, renewalConv, extOpp, extConv }
+}
+
 export function computeKpis(
   coaches: Coach[],
   clients: Client[],

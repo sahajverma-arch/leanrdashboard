@@ -97,6 +97,23 @@ export async function getLeanrTeamSales(): Promise<LeanrMonth[]> {
   return (data ?? []) as LeanrMonth[]
 }
 
+export type CoachOpportunityRow = {
+  dietitian: string | null
+  exercise_coach: string | null
+  renewal_opp: string | null
+  extension_opp: string | null
+  purchase_w: string | null
+  purchase_x: string | null
+}
+
+// Per-client renewal/extension opportunity rows (from raw_data_coaches_opportunity).
+// ~1.4k rows, so page past the 1000-row cap.
+export async function getCoachOpportunity(): Promise<CoachOpportunityRow[]> {
+  const supabase = await createClient()
+  const { data } = await fetchAll<CoachOpportunityRow>(supabase, 'raw_coach_opportunity')
+  return data ?? []
+}
+
 // Per-coach current-month sales (from the Leaner_Team_Sales tab), sorted high→low.
 export async function getCoachMonthSales(): Promise<CoachSale[]> {
   const supabase = await createClient()

@@ -168,6 +168,57 @@ async function syncLeanerTeamSales(supabase: Admin): Promise<SourceResult> {
   return { table: 'raw_leaner_team_sales', rows: rows.length }
 }
 
+type OpportunityRow = {
+  dietitian: string
+  exercise_coach: string
+  renewal_opp: string
+  extension_opp: string
+  purchase_w: string
+  purchase_x: string
+}
+
+// raw_data_coaches_opportunity has several blank header cells (which would all
+// collapse to the same key under the generic mirror), so we read it by column
+// position instead: G=dietitian, I=exercise coach, J=renewal flag, K=extension
+// flag, W/X=latest purchase types (used to decide whether an opp converted).
+function parseCoachOpportunity(values: CellValue[][]): OpportunityRow[] {
+  const out: OpportunityRow[] = []
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? []
+    const s = (c: number) => String(row[c] ?? '').trim()
+    const dietitian = s(6) // G
+    const exercise_coach = s(8) // I
+    const renewal_opp = s(9) // J
+    const extension_opp = s(10) // K
+    // Skip blank rows (no coach and no opportunity flags).
+    if (!dietitian && !exercise_coach && !renewal_opp && !extension_opp) continue
+    out.push({
+      dietitian,
+      exercise_coach,
+      renewal_opp,
+      extension_opp,
+      purchase_w: s(22), // W
+      purchase_x: s(23), // X
+    })
+  }
+  return out
+}
+
+async function syncCoachOpportunity(supabase: Admin): Promise<SourceResult> {
+  const values = await readRange(SPREADSHEET_ID, a1('raw_data_coaches_opportunity', 'A1:X'))
+  const rows = parseCoachOpportunity(values)
+  const { error: delErr } = await supabase.from('raw_coach_opportunity').delete().gte('id', 0)
+  if (delErr) throw new Error(delErr.message)
+  let written = 0
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK)
+    const { error } = await supabase.from('raw_coach_opportunity').insert(chunk)
+    if (error) throw new Error(error.message)
+    written += chunk.length
+  }
+  return { table: 'raw_coach_opportunity', rows: written }
+}
+
 // Read every configured sheet and write it into Postgres.
 export async function runSync(): Promise<SyncResult> {
   const supabase = createAdminClient()
@@ -202,6 +253,17 @@ export async function runSync(): Promise<SyncResult> {
   } catch (e) {
     results.push({
       table: 'raw_leaner_team_sales',
+      rows: 0,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+
+  // raw_data_coaches_opportunity is read by column position into a clean table.
+  try {
+    results.push(await syncCoachOpportunity(supabase))
+  } catch (e) {
+    results.push({
+      table: 'raw_coach_opportunity',
       rows: 0,
       error: e instanceof Error ? e.message : String(e),
     })
