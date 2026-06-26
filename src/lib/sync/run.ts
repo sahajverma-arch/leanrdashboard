@@ -221,6 +221,39 @@ async function syncCoachOpportunity(supabase: Admin): Promise<SourceResult> {
   return { table: 'raw_coach_opportunity', rows: written }
 }
 
+type TeamRow = { coach: string; team: string }
+
+// Team blocks sit side by side: the team name is in row 3 (index 2) of an even
+// column, with that team's coaches listed in the rows below. Spacer columns
+// between teams are skipped; stray numeric cells are ignored.
+const TEAM_COLS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+function parseTeamStructure(values: CellValue[][]): TeamRow[] {
+  const out: TeamRow[] = []
+  const headerRow = values[2] ?? []
+  for (const c of TEAM_COLS) {
+    const team = String(headerRow[c] ?? '').trim()
+    if (!team) continue
+    for (let i = 3; i < values.length; i++) {
+      const name = String(values[i]?.[c] ?? '').trim()
+      if (!name || /^[0-9.]+$/.test(name)) continue // skip blanks / stray numbers
+      out.push({ coach: name, team })
+    }
+  }
+  return out
+}
+
+async function syncTeamStructure(supabase: Admin): Promise<SourceResult> {
+  const values = await readRange(SPREADSHEET_ID, a1('Team Structure', 'A1:S200'))
+  const rows = parseTeamStructure(values)
+  const { error: delErr } = await supabase.from('raw_team_structure').delete().gte('id', 0)
+  if (delErr) throw new Error(delErr.message)
+  if (rows.length) {
+    const { error } = await supabase.from('raw_team_structure').insert(rows)
+    if (error) throw new Error(error.message)
+  }
+  return { table: 'raw_team_structure', rows: rows.length }
+}
+
 // Read every configured sheet and write it into Postgres.
 export async function runSync(): Promise<SyncResult> {
   const supabase = createAdminClient()
@@ -266,6 +299,17 @@ export async function runSync(): Promise<SyncResult> {
   } catch (e) {
     results.push({
       table: 'raw_coach_opportunity',
+      rows: 0,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+
+  // Team Structure -> coach/team map for per-team opportunity roll-ups.
+  try {
+    results.push(await syncTeamStructure(supabase))
+  } catch (e) {
+    results.push({
+      table: 'raw_team_structure',
       rows: 0,
       error: e instanceof Error ? e.message : String(e),
     })

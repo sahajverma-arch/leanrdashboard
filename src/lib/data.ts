@@ -115,6 +115,16 @@ export async function getCoachOpportunity(): Promise<CoachOpportunityRow[]> {
   return data ?? []
 }
 
+export type TeamMember = { coach: string | null; team: string | null }
+
+// Coach -> team mapping (from the Team Structure tab).
+export async function getTeamStructure(): Promise<TeamMember[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('raw_team_structure').select('coach, team')
+  if (error) return []
+  return (data ?? []) as TeamMember[]
+}
+
 // Per-coach current-month sales (from the Leaner_Team_Sales tab), sorted high→low.
 export async function getCoachMonthSales(): Promise<CoachSale[]> {
   const supabase = await createClient()

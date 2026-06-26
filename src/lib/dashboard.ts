@@ -155,6 +155,32 @@ export function coachOpportunities(rows: OppRow[]): CoachOppStat[] {
   return [...map.values()]
 }
 
+export type TeamOppStat = { team: string; renewalOpp: number; renewalConv: number }
+
+// Renewal opportunities rolled up per team. A row's coaches are mapped to teams
+// via `teamOf` (returns null for coaches not in the Team Structure, which are
+// excluded). Teams are de-duplicated within a row, so a row whose two coaches
+// share a team counts once for it, and a row spanning two teams counts for each.
+export function teamOpportunities(
+  rows: OppRow[],
+  teamOf: (coach: string) => string | null,
+): TeamOppStat[] {
+  const map = new Map<string, TeamOppStat>()
+  for (const r of rows) {
+    if (!yes(r.renewal_opp)) continue
+    const converted = oppConverted(r.purchase_w, r.purchase_x)
+    const coaches = [r.dietitian, r.exercise_coach].map((c) => String(c ?? '').trim()).filter(Boolean)
+    const teams = [...new Set(coaches.map(teamOf).filter((t): t is string => !!t))]
+    for (const team of teams) {
+      const e = map.get(team) ?? { team, renewalOpp: 0, renewalConv: 0 }
+      e.renewalOpp++
+      if (converted) e.renewalConv++
+      map.set(team, e)
+    }
+  }
+  return [...map.values()]
+}
+
 // Unique (un-double-counted) totals straight from the rows, for the summary KPIs.
 export function opportunityTotals(rows: OppRow[]) {
   let renewalOpp = 0,

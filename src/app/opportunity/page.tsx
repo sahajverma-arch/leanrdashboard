@@ -1,11 +1,11 @@
-import { getCoachOpportunity } from '@/lib/data'
+import { getCoachOpportunity, getTeamStructure } from '@/lib/data'
 import { PageHeader, Panel } from '@/components/ui'
 import OpportunityView from '@/components/opportunity-view'
 
 export const dynamic = 'force-dynamic'
 
 export default async function OpportunityPage() {
-  const rows = await getCoachOpportunity()
+  const [rows, team] = await Promise.all([getCoachOpportunity(), getTeamStructure()])
 
   if (rows.length === 0) {
     return (
@@ -22,5 +22,5 @@ export default async function OpportunityPage() {
     )
   }
 
-  return <OpportunityView rows={rows} />
+  return <OpportunityView rows={rows} team={team} />
 }
