@@ -1,6 +1,6 @@
 import { DashboardSkeleton } from '@/components/skeletons'
 
-// CSAT: 4 KPIs, 4 chart panels, no table.
+// CSAT: month filter, 4 KPIs, a top-3 table, then 2 chart panels.
 export default function Loading() {
-  return <DashboardSkeleton kpis={4} panels={4} />
+  return <DashboardSkeleton kpis={4} panels={2} table />
 }

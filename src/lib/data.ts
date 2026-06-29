@@ -76,6 +76,39 @@ export async function getDashboard(
   }
 }
 
+export type CsatPageData = { stats: CsatStats; months: string[] }
+
+// CSAT page data: the stats for the selected month (or all-time when none), plus
+// the full month list for the dropdown. The stats are aggregated in SQL
+// (csat_stats RPC); we call it unfiltered for the month options and again
+// scoped to the chosen month for display.
+export async function getCsatPageData(
+  month?: string,
+): Promise<{ data?: CsatPageData; error?: string }> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return { error: 'Supabase env not set (NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY).' }
+  }
+  const supabase = await createClient()
+
+  // Unfiltered run — drives the month dropdown, and is the display data for "all".
+  const fullR = await supabase.rpc('csat_stats', { p_start: null, p_end: null, p_coach_id: null })
+  if (fullR.error) return { error: fullR.error.message }
+  const full = fullR.data as CsatStats
+
+  let stats = full
+  if (month && /^\d{4}-\d{2}$/.test(month)) {
+    const [y, m] = month.split('-').map(Number)
+    const start = `${month}-01`
+    const end = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
+    const monthR = await supabase.rpc('csat_stats', { p_start: start, p_end: end, p_coach_id: null })
+    if (monthR.error) return { error: monthR.error.message }
+    stats = monthR.data as CsatStats
+  }
+
+  const months = full.byMonth.map((d) => d.name).sort().reverse()
+  return { data: { stats, months } }
+}
+
 export type LeanrMonth = {
   month: string // 'YYYY-MM'
   extention: number
