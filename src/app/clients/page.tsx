@@ -10,9 +10,9 @@ export const dynamic = 'force-dynamic'
 type SP = Promise<Record<string, string | string[] | undefined>>
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  paused: 'bg-amber-100 text-amber-700',
-  cnr: 'bg-rose-100 text-rose-700',
+  active: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  paused: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  cnr: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400',
 }
 
 export default async function ClientsPage({ searchParams }: { searchParams: SP }) {
@@ -50,7 +50,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
         <div className="max-h-[520px] overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
+              <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
                 <th className="py-2 pr-4 font-medium">Client</th>
                 <th className="py-2 pr-4 font-medium">Coach</th>
                 <th className="py-2 pr-4 font-medium">Plan</th>
@@ -60,12 +60,12 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id} className="border-b border-zinc-100">
-                  <td className="py-2 pr-4 font-medium text-zinc-900">{c.name}</td>
-                  <td className="py-2 pr-4 text-zinc-600">{c.coach}</td>
-                  <td className="py-2 pr-4 text-zinc-600">{c.plan}</td>
+                <tr key={c.id} className="border-b border-zinc-100 dark:border-zinc-800">
+                  <td className="py-2 pr-4 font-medium text-zinc-900 dark:text-zinc-100">{c.name}</td>
+                  <td className="py-2 pr-4 text-zinc-600 dark:text-zinc-400">{c.coach}</td>
+                  <td className="py-2 pr-4 text-zinc-600 dark:text-zinc-400">{c.plan}</td>
                   <td className="py-2 pr-4">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[c.status] ?? 'bg-zinc-100 text-zinc-600'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[c.status] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>
                       {c.status}
                     </span>
                   </td>

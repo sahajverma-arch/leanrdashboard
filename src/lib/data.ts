@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Coach, Client, Sale, CsatStats, CoachSale } from './dashboard'
+import type { Coach, Client, Sale, CsatStats, CoachSale, TargetRow } from './dashboard'
 import {
   type Filters,
   type FilterOptions,
@@ -123,6 +123,19 @@ export async function getTeamStructure(): Promise<TeamMember[]> {
   const { data, error } = await supabase.from('raw_team_structure').select('coach, team')
   if (error) return []
   return (data ?? []) as TeamMember[]
+}
+
+// Per-coach sales targets (from the "Coach Wise Target" tab), rolled up per team
+// on the Sales Target page.
+export async function getCoachTargets(): Promise<TargetRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('raw_coach_targets')
+    .select(
+      'team, category, coach, total_target, renewal_target, extension_target, referral_target, reactivation_target',
+    )
+  if (error) return []
+  return (data ?? []) as TargetRow[]
 }
 
 // Per-coach current-month sales (from the Leaner_Team_Sales tab), sorted high→low.

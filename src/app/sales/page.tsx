@@ -26,7 +26,7 @@ export default async function SalesPage() {
     <>
       <SalesView sales={data.sales} leanrTeam={leanrTeam} initialMonth={initialMonth} />
 
-      <h2 className="mt-6 mb-3 text-sm font-semibold text-zinc-700">
+      <h2 className="mt-6 mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
         Top coaches by sales · {monthLabel}
       </h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

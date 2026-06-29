@@ -4,7 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import type { FilterOptions } from '@/lib/filters'
 
 const inputCls =
-  'rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none'
+  'rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-blue-400'
 
 export default function FilterBar({ options }: { options: FilterOptions }) {
   const router = useRouter()
@@ -21,10 +21,10 @@ export default function FilterBar({ options }: { options: FilterOptions }) {
   const active = ['start', 'end', 'coach', 'plan', 'status'].some((k) => sp.get(k))
 
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white p-3">
-      <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Filters</span>
+    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">Filters</span>
 
-      <label className="flex items-center gap-1 text-xs text-zinc-500">
+      <label className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
         From
         <input
           type="date"
@@ -33,7 +33,7 @@ export default function FilterBar({ options }: { options: FilterOptions }) {
           onChange={(e) => update('start', e.target.value)}
         />
       </label>
-      <label className="flex items-center gap-1 text-xs text-zinc-500">
+      <label className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
         To
         <input
           type="date"
@@ -73,7 +73,7 @@ export default function FilterBar({ options }: { options: FilterOptions }) {
       {active && (
         <button
           onClick={() => router.push(pathname)}
-          className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
+          className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50"
         >
           Clear
         </button>

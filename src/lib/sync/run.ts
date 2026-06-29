@@ -254,6 +254,57 @@ async function syncTeamStructure(supabase: Admin): Promise<SourceResult> {
   return { table: 'raw_team_structure', rows: rows.length }
 }
 
+type CoachTargetRow = {
+  team: string
+  category: string
+  coach: string
+  total_target: number
+  renewal_target: number
+  extension_target: number
+  referral_target: number
+  reactivation_target: number
+}
+
+// "Coach Wise Target" has blank spacer columns between groups and messy headers,
+// so we read it BY COLUMN POSITION: A=team, B=category, C=coach, D=total target,
+// H=renewal target, M=extension target, R=referral target, U=reactivation target.
+function parseCoachTargets(values: CellValue[][]): CoachTargetRow[] {
+  const out: CoachTargetRow[] = []
+  const num = (x: CellValue) => {
+    const n = Number(x)
+    return Number.isFinite(n) ? n : 0
+  }
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? []
+    const team = String(row[0] ?? '').trim() // A
+    const coach = String(row[2] ?? '').trim() // C
+    if (!team || !coach) continue // skip blanks / separator rows
+    out.push({
+      team,
+      category: String(row[1] ?? '').trim(), // B
+      coach,
+      total_target: num(row[3]), // D
+      renewal_target: num(row[7]), // H
+      extension_target: num(row[12]), // M
+      referral_target: num(row[17]), // R
+      reactivation_target: num(row[20]), // U
+    })
+  }
+  return out
+}
+
+async function syncCoachTargets(supabase: Admin): Promise<SourceResult> {
+  const values = await readRange(SPREADSHEET_ID, a1('Coach Wise Target', 'A1:U'))
+  const rows = parseCoachTargets(values)
+  const { error: delErr } = await supabase.from('raw_coach_targets').delete().gte('id', 0)
+  if (delErr) throw new Error(delErr.message)
+  if (rows.length) {
+    const { error } = await supabase.from('raw_coach_targets').insert(rows)
+    if (error) throw new Error(error.message)
+  }
+  return { table: 'raw_coach_targets', rows: rows.length }
+}
+
 // Read every configured sheet and write it into Postgres.
 export async function runSync(): Promise<SyncResult> {
   const supabase = createAdminClient()
@@ -310,6 +361,17 @@ export async function runSync(): Promise<SyncResult> {
   } catch (e) {
     results.push({
       table: 'raw_team_structure',
+      rows: 0,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+
+  // Coach Wise Target -> per-coach targets for the Sales Target page.
+  try {
+    results.push(await syncCoachTargets(supabase))
+  } catch (e) {
+    results.push({
+      table: 'raw_coach_targets',
       rows: 0,
       error: e instanceof Error ? e.message : String(e),
     })

@@ -201,6 +201,223 @@ export function opportunityTotals(rows: OppRow[]) {
   return { renewalOpp, renewalConv, extOpp, extConv }
 }
 
+// ---------- Sales targets (per coach, rolled up per team) ----------
+
+// One row from the "Coach Wise Target" tab (mirrored into raw_coach_targets).
+export type TargetRow = {
+  team: string | null
+  category: string | null
+  coach: string | null // 'Name ECODE'
+  total_target: number | null
+  renewal_target: number | null
+  extension_target: number | null
+  referral_target: number | null
+  reactivation_target: number | null
+}
+
+export type CoachTarget = {
+  coach: string // full 'Name ECODE' key
+  name: string // display name (code stripped)
+  category: string
+  renewal: number
+  extension: number
+  referral: number
+  reactivation: number
+  total: number
+}
+
+export type TeamTarget = {
+  team: string
+  renewal: number
+  extension: number
+  referral: number
+  reactivation: number
+  total: number
+  members: CoachTarget[]
+}
+
+const targetNum = (x: number | null | undefined) => {
+  const n = Number(x)
+  return Number.isFinite(n) ? n : 0
+}
+
+// Group per-coach target rows by team, summing each target column and keeping the
+// member list (for the expandable rows). Teams and members are sorted by total ₹.
+export function teamTargets(rows: TargetRow[]): TeamTarget[] {
+  const map = new Map<string, TeamTarget>()
+  for (const r of rows) {
+    const team = String(r.team ?? '').trim()
+    const coach = String(r.coach ?? '').trim()
+    if (!team || !coach) continue
+    const member: CoachTarget = {
+      coach,
+      name: coachDisplayName(coach),
+      category: String(r.category ?? '').trim(),
+      renewal: targetNum(r.renewal_target),
+      extension: targetNum(r.extension_target),
+      referral: targetNum(r.referral_target),
+      reactivation: targetNum(r.reactivation_target),
+      total: targetNum(r.total_target),
+    }
+    const e =
+      map.get(team) ??
+      { team, renewal: 0, extension: 0, referral: 0, reactivation: 0, total: 0, members: [] }
+    e.renewal += member.renewal
+    e.extension += member.extension
+    e.referral += member.referral
+    e.reactivation += member.reactivation
+    e.total += member.total
+    e.members.push(member)
+    map.set(team, e)
+  }
+  const teams = [...map.values()]
+  for (const t of teams) t.members.sort((a, b) => b.total - a.total)
+  return teams.sort((a, b) => b.total - a.total)
+}
+
+// Grand totals across all teams, for the summary KPI cards.
+export function targetGrandTotals(teams: TeamTarget[]) {
+  return teams.reduce(
+    (acc, t) => ({
+      renewal: acc.renewal + t.renewal,
+      extension: acc.extension + t.extension,
+      referral: acc.referral + t.referral,
+      reactivation: acc.reactivation + t.reactivation,
+      total: acc.total + t.total,
+    }),
+    { renewal: 0, extension: 0, referral: 0, reactivation: 0, total: 0 },
+  )
+}
+
+// Distinct coach categories present in the target data (e.g. 'Dietitian'), sorted.
+export function targetCategories(teams: TeamTarget[]): string[] {
+  const set = new Set<string>()
+  for (const t of teams) for (const m of t.members) if (m.category) set.add(m.category)
+  return [...set].sort()
+}
+
+// Re-aggregate teams keeping only members of `category` (recomputing each team's
+// sums from the surviving members and dropping teams left empty). 'all'/'' = no-op.
+// Teams stay sorted by (filtered) total ₹.
+export function filterTeamsByCategory(teams: TeamTarget[], category: string): TeamTarget[] {
+  if (!category || category === 'all') return teams
+  const out: TeamTarget[] = []
+  for (const t of teams) {
+    const members = t.members.filter((m) => m.category === category)
+    if (members.length === 0) continue
+    const sum = members.reduce(
+      (a, m) => ({
+        renewal: a.renewal + m.renewal,
+        extension: a.extension + m.extension,
+        referral: a.referral + m.referral,
+        reactivation: a.reactivation + m.reactivation,
+        total: a.total + m.total,
+      }),
+      { renewal: 0, extension: 0, referral: 0, reactivation: 0, total: 0 },
+    )
+    out.push({ team: t.team, ...sum, members })
+  }
+  return out.sort((a, b) => b.total - a.total)
+}
+
+// ---------- Renewal opportunity, grouped by team & category ----------
+// Reuses the per-coach renewal stats (each opportunity is credited to BOTH its
+// dietitian and exercise coach) and attaches each coach's team (from Team
+// Structure) and category (from Coach Wise Target). Coaches missing from those
+// tabs fall into 'Unassigned' / 'Uncategorized' so nothing is silently dropped.
+
+export const UNASSIGNED_TEAM = 'Unassigned'
+export const UNCATEGORIZED = 'Uncategorized'
+
+export type CoachOppDetail = {
+  coach: string // full 'Name ECODE' key
+  name: string // display name (code stripped)
+  team: string
+  category: string
+  opp: number // renewal opportunities
+  conv: number // converted
+}
+
+export type TeamOppGroup = {
+  team: string
+  opp: number
+  conv: number
+  members: CoachOppDetail[]
+}
+
+// 'Unassigned' always sorts last; everything else by opportunities desc.
+function sortTeamGroups(groups: TeamOppGroup[]): TeamOppGroup[] {
+  return groups.sort((a, b) => {
+    if (a.team === UNASSIGNED_TEAM) return 1
+    if (b.team === UNASSIGNED_TEAM) return -1
+    return b.opp - a.opp
+  })
+}
+
+export function coachOppByTeam(
+  rows: OppRow[],
+  teamOf: (coach: string) => string | null,
+  categoryOf: (coach: string) => string | null,
+): TeamOppGroup[] {
+  const map = new Map<string, TeamOppGroup>()
+  for (const c of coachOpportunities(rows)) {
+    if (c.renewalOpp <= 0) continue
+    const team = teamOf(c.coach) || UNASSIGNED_TEAM
+    const category = categoryOf(c.coach) || UNCATEGORIZED
+    const member: CoachOppDetail = {
+      coach: c.coach,
+      name: c.name,
+      team,
+      category,
+      opp: c.renewalOpp,
+      conv: c.renewalConv,
+    }
+    const g = map.get(team) ?? { team, opp: 0, conv: 0, members: [] }
+    g.opp += member.opp
+    g.conv += member.conv
+    g.members.push(member)
+    map.set(team, g)
+  }
+  const groups = [...map.values()]
+  for (const g of groups) g.members.sort((a, b) => b.opp - a.opp)
+  return sortTeamGroups(groups)
+}
+
+// Distinct categories present, with 'Uncategorized' forced last.
+export function oppCategories(groups: TeamOppGroup[]): string[] {
+  const set = new Set<string>()
+  for (const g of groups) for (const m of g.members) if (m.category) set.add(m.category)
+  return [...set].sort((a, b) => {
+    if (a === UNCATEGORIZED) return 1
+    if (b === UNCATEGORIZED) return -1
+    return a.localeCompare(b)
+  })
+}
+
+// Re-aggregate groups keeping only members of `category` (dropping empty teams).
+export function filterOppByCategory(groups: TeamOppGroup[], category: string): TeamOppGroup[] {
+  if (!category || category === 'all') return groups
+  const out: TeamOppGroup[] = []
+  for (const g of groups) {
+    const members = g.members.filter((m) => m.category === category)
+    if (members.length === 0) continue
+    out.push({
+      team: g.team,
+      opp: members.reduce((a, m) => a + m.opp, 0),
+      conv: members.reduce((a, m) => a + m.conv, 0),
+      members,
+    })
+  }
+  return sortTeamGroups(out)
+}
+
+export function oppGrandTotals(groups: TeamOppGroup[]) {
+  return groups.reduce((a, g) => ({ opp: a.opp + g.opp, conv: a.conv + g.conv }), {
+    opp: 0,
+    conv: 0,
+  })
+}
+
 export function computeKpis(
   coaches: Coach[],
   clients: Client[],

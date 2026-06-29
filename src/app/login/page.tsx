@@ -27,15 +27,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-xl font-bold text-zinc-900">LEANR Dashboard</h1>
-        <p className="mt-1 text-sm text-zinc-500">Sign in with your fitelo.co account</p>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">LEANR Dashboard</h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Sign in with your fitelo.co account</p>
 
         <button
           onClick={signInWithGoogle}
           disabled={loading}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
@@ -46,7 +46,7 @@ export default function LoginPage() {
           {loading ? 'Redirecting…' : 'Sign in with Google'}
         </button>
 
-        {error && <p className="mt-4 text-xs text-rose-600">{error}</p>}
+        {error && <p className="mt-4 text-xs text-rose-600 dark:text-rose-400">{error}</p>}
       </div>
     </div>
   )

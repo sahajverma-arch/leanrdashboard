@@ -44,7 +44,7 @@ export default async function CoachesPage({ searchParams }: { searchParams: SP }
         <div className="max-h-[520px] overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
+              <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
                 <th className="py-2 pr-4 font-medium">Coach</th>
                 <th className="py-2 pr-4 font-medium">Role</th>
                 <th className="py-2 pr-4 text-right font-medium">Clients</th>
@@ -54,9 +54,9 @@ export default async function CoachesPage({ searchParams }: { searchParams: SP }
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.name} className="border-b border-zinc-100">
-                  <td className="py-2 pr-4 font-medium text-zinc-900">{c.name}</td>
-                  <td className="py-2 pr-4 text-zinc-600">{c.role}</td>
+                <tr key={c.name} className="border-b border-zinc-100 dark:border-zinc-800">
+                  <td className="py-2 pr-4 font-medium text-zinc-900 dark:text-zinc-100">{c.name}</td>
+                  <td className="py-2 pr-4 text-zinc-600 dark:text-zinc-400">{c.role}</td>
                   <td className="py-2 pr-4 text-right tabular-nums">{c.clients}</td>
                   <td className="py-2 pr-4 text-right tabular-nums">{formatINR(c.revenue)}</td>
                   <td className="py-2 text-right tabular-nums">{c.avgCsat ? c.avgCsat.toFixed(2) : '—'}</td>

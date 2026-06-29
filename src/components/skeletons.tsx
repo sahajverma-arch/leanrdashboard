@@ -3,12 +3,12 @@
 // real pages so the swap to live content is seamless rather than a layout jump.
 
 function Shimmer({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-zinc-200 ${className}`} />
+  return <div className={`animate-pulse rounded bg-zinc-200 dark:bg-zinc-800 ${className}`} />
 }
 
 function KpiSkeleton() {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
       <Shimmer className="h-3 w-20" />
       <Shimmer className="mt-2 h-7 w-24" />
       <Shimmer className="mt-2 h-3 w-16" />
@@ -18,7 +18,7 @@ function KpiSkeleton() {
 
 function PanelSkeleton({ className = '' }: { className?: string }) {
   return (
-    <section className={`rounded-xl border border-zinc-200 bg-white p-4 ${className}`}>
+    <section className={`rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 ${className}`}>
       <Shimmer className="mb-4 h-4 w-40" />
       <Shimmer className="h-[280px] w-full" />
     </section>
@@ -27,7 +27,7 @@ function PanelSkeleton({ className = '' }: { className?: string }) {
 
 function TableSkeleton({ rows = 8 }: { rows?: number }) {
   return (
-    <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+    <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
       <Shimmer className="mb-4 h-4 w-40" />
       <div className="space-y-2.5">
         {Array.from({ length: rows }).map((_, i) => (

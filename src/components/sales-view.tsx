@@ -13,8 +13,8 @@ function monthLabel(ym: string): string {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold text-zinc-900">{value.toLocaleString('en-IN')}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</div>
+      <div className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100">{value.toLocaleString('en-IN')}</div>
     </div>
   )
 }
@@ -35,14 +35,14 @@ function SectionCard({
   reference: number
 }) {
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5">
-      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {title} · {monthLabel(month)}
       </div>
-      <div className="mt-1 text-4xl font-bold text-zinc-900">{formatINR(revenue)}</div>
-      <div className="mt-0.5 text-xs text-zinc-500">total sales value</div>
+      <div className="mt-1 text-4xl font-bold text-zinc-900 dark:text-zinc-100">{formatINR(revenue)}</div>
+      <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">total sales value</div>
 
-      <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-100 pt-4">
+      <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
         <Stat label="Renew" value={renew} />
         <Stat label="Reactive" value={reactive} />
         <Stat label="Ref" value={reference} />
@@ -89,15 +89,15 @@ export default function SalesView({
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-zinc-900">Sales</h1>
-          <p className="mt-0.5 text-sm text-zinc-500">Overall vs LEANR team</p>
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Sales</h1>
+          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">Overall vs LEANR team</p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-zinc-500">
+        <label className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
           Month
           <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-sm font-medium text-zinc-800 focus:border-blue-500 focus:outline-none"
+            className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-sm font-medium text-zinc-800 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-blue-400"
           >
             {months.map((m) => (
               <option key={m} value={m}>
