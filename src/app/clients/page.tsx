@@ -39,6 +39,18 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
   const pct = (n: number) => (clients.length ? `${Math.round((n / clients.length) * 100)}% of total` : undefined)
   const learnBasic = groupCount('Learn Basic')
   const learnAdv = groupCount('Learn Adv')
+
+  // "Learn Basic X · Learn Adv Y" split for any client subset — drives the
+  // per-KPI bifurcation sub-lines.
+  const basicClients = clients.filter((c) => planGroup(c.plan) === 'Learn Basic')
+  const advClients = clients.filter((c) => planGroup(c.plan) === 'Learn Adv')
+  const splitSub = (pred: (c: (typeof clients)[number]) => boolean) => {
+    const b = basicClients.filter(pred).length
+    const a = advClients.filter(pred).length
+    return `Basic ${b.toLocaleString('en-IN')} · Adv ${a.toLocaleString('en-IN')}`
+  }
+  const weightSub = `Basic ${avgWeightLost(basicClients).toFixed(1)} · Adv ${avgWeightLost(advClients).toFixed(1)} kg`
+
   const rows = clientsWithNames(clients, coaches)
 
   return (
@@ -47,13 +59,13 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
       <FilterBar options={options} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
-        <Kpi label="Total" value={clients.length.toLocaleString('en-IN')} />
+        <Kpi label="Total" value={clients.length.toLocaleString('en-IN')} sub={`Basic ${learnBasic.toLocaleString('en-IN')} · Adv ${learnAdv.toLocaleString('en-IN')}`} />
         <Kpi label="Learn Basic" value={learnBasic.toLocaleString('en-IN')} sub={pct(learnBasic)} />
         <Kpi label="Learn Adv" value={learnAdv.toLocaleString('en-IN')} sub={pct(learnAdv)} />
-        <Kpi label="Active" value={String(counts('active'))} />
-        <Kpi label="Paused" value={String(counts('paused'))} />
-        <Kpi label="CNR" value={String(counts('cnr'))} />
-        <Kpi label="Avg weight lost" value={`${avgWeightLost(clients).toFixed(1)} kg`} />
+        <Kpi label="Active" value={String(counts('active'))} sub={splitSub((c) => c.status === 'active')} />
+        <Kpi label="Paused" value={String(counts('paused'))} sub={splitSub((c) => c.status === 'paused')} />
+        <Kpi label="CNR" value={String(counts('cnr'))} sub={splitSub((c) => c.status === 'cnr')} />
+        <Kpi label="Avg weight lost" value={`${avgWeightLost(clients).toFixed(1)} kg`} sub={weightSub} />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
