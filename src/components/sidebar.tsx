@@ -12,6 +12,7 @@ const LINKS = [
   { href: '/sales-teamwise', label: 'Sales teamwise' },
   { href: '/targets', label: 'Sales Target' },
   { href: '/opportunity', label: 'Renewal opportunity' },
+  { href: '/opportunities', label: 'Opportunity' },
   { href: '/coaches', label: 'Coaches' },
   { href: '/clients', label: 'Clients' },
   { href: '/csat', label: 'CSAT' },

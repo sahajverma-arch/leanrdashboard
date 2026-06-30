@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { readRange } from '@/lib/google/sheets'
+import { SPREADSHEET_ID } from './sync/sources'
 import type { Coach, Client, Sale, CsatStats, CoachSale, TargetRow } from './dashboard'
 import type { OverallSaleRow } from './teamwise'
+import { parseOpportunitySheet, type OpportunityData } from './opportunity'
 import {
   type Filters,
   type FilterOptions,
@@ -206,6 +209,19 @@ export async function getOverallSalesRows(): Promise<OverallSaleRow[]> {
     if (rows.length < PAGE) break
   }
   return all
+}
+
+// Coach-wise + team-wise renewal/extension opportunity stats, read live from the
+// pre-aggregated "opportunity" sheet tab (small, ~50 rows) via the service
+// account — independent of the existing /opportunity (raw_coach_opportunity) tab.
+export async function getCoachTeamOpportunity(): Promise<OpportunityData> {
+  if (!SPREADSHEET_ID) return { coaches: [], teams: [] }
+  try {
+    const values = await readRange(SPREADSHEET_ID, "'opportunity'!A1:Q200")
+    return parseOpportunitySheet(values)
+  } catch {
+    return { coaches: [], teams: [] }
+  }
 }
 
 // Per-coach current-month sales (from the Leaner_Team_Sales tab), sorted high→low.
