@@ -9,6 +9,7 @@ import { useTheme } from '@/components/theme-provider'
 const LINKS = [
   { href: '/', label: 'Overview' },
   { href: '/sales', label: 'Sales' },
+  { href: '/sales-teamwise', label: 'Sales teamwise' },
   { href: '/targets', label: 'Sales Target' },
   { href: '/opportunity', label: 'Renewal opportunity' },
   { href: '/coaches', label: 'Coaches' },
@@ -45,7 +46,10 @@ export default function Sidebar() {
 
       <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col">
         {LINKS.map((l) => {
-          const active = l.href === '/' ? pathname === '/' : pathname.startsWith(l.href)
+          const active =
+            l.href === '/'
+              ? pathname === '/'
+              : pathname === l.href || pathname.startsWith(`${l.href}/`)
           return (
             <Link
               key={l.href}

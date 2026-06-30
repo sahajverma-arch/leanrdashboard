@@ -64,6 +64,16 @@ export function formatINR(n: number): string {
   return '₹' + Math.round(n).toLocaleString('en-IN')
 }
 
+// Compact Indian-currency format for dense tables: ₹1.23 Cr / ₹12.34 L / ₹4.5K.
+export function formatINRShort(n: number): string {
+  if (!Number.isFinite(n)) return '—'
+  const a = Math.abs(n)
+  if (a >= 1e7) return '₹' + (n / 1e7).toFixed(2) + ' Cr'
+  if (a >= 1e5) return '₹' + (n / 1e5).toFixed(2) + ' L'
+  if (a >= 1e3) return '₹' + (n / 1e3).toFixed(1) + 'K'
+  return '₹' + Math.round(n).toLocaleString('en-IN')
+}
+
 export function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return '—'
   return n.toLocaleString('en-IN', { maximumFractionDigits: 1 })

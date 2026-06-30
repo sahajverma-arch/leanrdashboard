@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Coach, Client, Sale, CsatStats, CoachSale, TargetRow } from './dashboard'
+import type { OverallSaleRow } from './teamwise'
 import {
   type Filters,
   type FilterOptions,
@@ -169,6 +170,42 @@ export async function getCoachTargets(): Promise<TargetRow[]> {
     )
   if (error) return []
   return (data ?? []) as TargetRow[]
+}
+
+type RawOverallSale = {
+  actualownerdept: string | null
+  ordertype: string | null
+  saletypewithextension: string | null
+  amount: string | null
+  saledate: string | null
+}
+
+// Raw Overall Sales rows (dept / order type / sale type / amount / date) for the
+// "Sales teamwise" tab. ~3.6k rows, so page past the 1000-row cap. Amount is
+// parsed to a number here so the matrix helpers stay pure.
+export async function getOverallSalesRows(): Promise<OverallSaleRow[]> {
+  const supabase = await createClient()
+  const cols = 'actualownerdept, ordertype, saletypewithextension, amount, saledate'
+  const all: OverallSaleRow[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('raw_overall_sales')
+      .select(cols)
+      .range(from, from + PAGE - 1)
+    if (error) break
+    const rows = (data ?? []) as RawOverallSale[]
+    for (const r of rows) {
+      all.push({
+        dept: r.actualownerdept,
+        order_type: r.ordertype,
+        sale_type: r.saletypewithextension,
+        amount: Number(String(r.amount ?? '').replace(/[^0-9.\-]/g, '')) || 0,
+        sale_date: r.saledate,
+      })
+    }
+    if (rows.length < PAGE) break
+  }
+  return all
 }
 
 // Per-coach current-month sales (from the Leaner_Team_Sales tab), sorted high→low.
