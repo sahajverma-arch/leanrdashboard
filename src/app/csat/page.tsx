@@ -2,6 +2,7 @@ import { getCsatPageData } from '@/lib/data'
 import { PageHeader, Kpi, Panel, SetupNotice } from '@/components/ui'
 import { CsatBarChart, CountBarChart } from '@/components/charts'
 import CsatMonthFilter from '@/components/csat-month-filter'
+import { csatGroupStat } from '@/lib/dashboard'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,20 +19,39 @@ export default async function CsatPage({ searchParams }: { searchParams: SP }) {
   const happyPct = csat.count ? (csat.happy / csat.count) * 100 : 0
   const top3 = csat.byCoach.slice(0, 3)
 
+  // Learn Basic / Learn Adv split (plan group from the CSAT sheet's plan name).
+  const basic = csatGroupStat(csat, 'Learn Basic')
+  const adv = csatGroupStat(csat, 'Learn Adv')
+  const split = (b: number, a: number) =>
+    `Basic ${b.toLocaleString('en-IN')} · Adv ${a.toLocaleString('en-IN')}`
+  const ratingsByGroup = [
+    { name: 'Learn Basic', value: basic.count },
+    { name: 'Learn Adv', value: adv.count },
+  ].filter((d) => d.value > 0)
+  const avgByGroup = [
+    { name: 'Learn Basic', value: basic.avg },
+    { name: 'Learn Adv', value: adv.avg },
+  ].filter((d) => d.value > 0)
+
   return (
     <>
       <PageHeader title="CSAT" subtitle="Client satisfaction ratings" />
       <CsatMonthFilter months={months} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Avg CSAT" value={`${csat.avg.toFixed(2)} / 5`} />
-        <Kpi label="Ratings" value={csat.count.toLocaleString('en-IN')} />
-        <Kpi
-          label="Happy (5★)"
-          value={`${happyPct.toFixed(0)}%`}
-          sub={`${csat.happy.toLocaleString('en-IN')} ratings`}
-        />
-        <Kpi label="Detractors (1-3★)" value={csat.detractors.toLocaleString('en-IN')} />
+        <Kpi label="Avg CSAT" value={`${csat.avg.toFixed(2)} / 5`} sub={`Basic ${basic.avg.toFixed(2)} · Adv ${adv.avg.toFixed(2)}`} />
+        <Kpi label="Ratings" value={csat.count.toLocaleString('en-IN')} sub={split(basic.count, adv.count)} />
+        <Kpi label="Happy (5★)" value={`${happyPct.toFixed(0)}%`} sub={split(basic.happy, adv.happy)} />
+        <Kpi label="Detractors (1-3★)" value={csat.detractors.toLocaleString('en-IN')} sub={split(basic.detractors, adv.detractors)} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Panel title="Ratings by group">
+          <CountBarChart data={ratingsByGroup} color="#16a34a" />
+        </Panel>
+        <Panel title="Avg CSAT by group">
+          <CsatBarChart data={avgByGroup} />
+        </Panel>
       </div>
 
       {/* Top 3 coaches table — first, above the charts. */}

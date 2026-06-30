@@ -36,6 +36,9 @@ export type Csat = {
 
 export type NameValue = { name: string; value: number }
 
+// Per-plan-group CSAT slice (Learn Basic / Learn Adv), from csat_stats' byGroup.
+export type CsatGroupStat = { count: number; avg: number; happy: number; detractors: number }
+
 // CSAT aggregates computed in SQL (csat_stats RPC).
 export type CsatStats = {
   count: number
@@ -46,6 +49,14 @@ export type CsatStats = {
   byCategory: NameValue[]
   byMonth: NameValue[]
   distribution: NameValue[]
+  byGroup?: Record<string, CsatGroupStat>
+}
+
+// Safe accessor for one plan group's CSAT slice — zeros when absent (e.g. a
+// month with no Learn Adv ratings, or before the byGroup migration is applied).
+const EMPTY_CSAT_GROUP: CsatGroupStat = { count: 0, avg: 0, happy: 0, detractors: 0 }
+export function csatGroupStat(csat: CsatStats, group: string): CsatGroupStat {
+  return csat.byGroup?.[group] ?? EMPTY_CSAT_GROUP
 }
 
 export function formatINR(n: number): string {
