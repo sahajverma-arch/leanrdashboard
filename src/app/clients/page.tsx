@@ -51,6 +51,13 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
   }
   const weightSub = `Basic ${avgWeightLost(basicClients).toFixed(1)} · Adv ${avgWeightLost(advClients).toFixed(1)} kg`
 
+  // Learn Basic vs Learn Adv split within one status — for the per-status pies.
+  const groupSplit = (status: string) =>
+    [
+      { name: 'Learn Basic', value: basicClients.filter((c) => c.status === status).length },
+      { name: 'Learn Adv', value: advClients.filter((c) => c.status === status).length },
+    ].filter((d) => d.value > 0)
+
   const rows = clientsWithNames(clients, coaches)
 
   return (
@@ -74,6 +81,18 @@ export default async function ClientsPage({ searchParams }: { searchParams: SP }
         </Panel>
         <Panel title="Clients by status">
           <StatusPieChart data={clientsByStatus(clients)} />
+        </Panel>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Panel title="Active — Basic vs Adv">
+          <StatusPieChart data={groupSplit('active')} />
+        </Panel>
+        <Panel title="Paused — Basic vs Adv">
+          <StatusPieChart data={groupSplit('paused')} />
+        </Panel>
+        <Panel title="CNR — Basic vs Adv">
+          <StatusPieChart data={groupSplit('cnr')} />
         </Panel>
       </div>
 
