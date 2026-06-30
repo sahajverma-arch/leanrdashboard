@@ -509,6 +509,28 @@ export function clientsByPlan(clients: Client[]): NameValue[] {
   )
 }
 
+// High-level plan family for a client's Current_Plan. The sheet's plans split
+// into two tiers: "Leanr Basic" and "Performance CORE" (incl. "Core (New)") are
+// Learn Basic; "Leanr Advance" and "Performance PRO" (incl. "Pro (New)") are
+// Learn Adv. Anything matching neither falls into "Other".
+export const PLAN_GROUPS = ['Learn Basic', 'Learn Adv'] as const
+export type PlanGroup = (typeof PLAN_GROUPS)[number] | 'Other'
+
+export function planGroup(plan: string | null | undefined): PlanGroup {
+  const p = String(plan ?? '').toLowerCase()
+  if (p.includes('basic') || p.includes('core')) return 'Learn Basic'
+  if (p.includes('advance') || p.includes('pro')) return 'Learn Adv'
+  return 'Other'
+}
+
+// Client counts per plan group, ordered Learn Basic, Learn Adv, then Other —
+// only including groups that actually have clients.
+export function clientsByGroup(clients: Client[]): NameValue[] {
+  const counts = groupSum(clients.map((c) => ({ key: planGroup(c.plan), value: 1 })))
+  const order = [...PLAN_GROUPS, 'Other']
+  return counts.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))
+}
+
 export function csatByCategory(csat: Csat[]): NameValue[] {
   const sum = new Map<string, { total: number; n: number }>()
   for (const r of csat) {
@@ -597,6 +619,7 @@ export type ClientRow = {
   name: string
   coach: string
   plan: string
+  group: PlanGroup
   status: string
   weightLost: number
 }
@@ -610,6 +633,7 @@ export function clientsWithNames(clients: Client[], coaches: Coach[]): ClientRow
       name: c.name,
       coach: c.coach_id != null ? coachName.get(c.coach_id) ?? '—' : '—',
       plan: c.plan ?? '—',
+      group: planGroup(c.plan),
       status: c.status ?? '—',
       weightLost: Number(c.weight_lost_kg) || 0,
     }))
