@@ -1,17 +1,41 @@
 import { getDashboard, getCoachMonthSales } from '@/lib/data'
 import { PageHeader, Kpi, SetupNotice, TopCoaches } from '@/components/ui'
-import { computeKpis, avgWeightLost, formatINR, topCoaches } from '@/lib/dashboard'
+import { computeKpis, avgWeightLost, formatINR, topCoaches, planGroup } from '@/lib/dashboard'
+import DateRangeFilter from '@/components/date-range-filter'
 
 export const dynamic = 'force-dynamic'
 
-export default async function OverviewPage() {
-  // Overview is always scoped to the current month — no filters.
+type SP = Promise<Record<string, string | string[] | undefined>>
+
+const pad = (n: number) => String(n).padStart(2, '0')
+const fmtDay = (ymd: string) => {
+  const [y, m, d] = ymd.split('-').map(Number)
+  if (!y || !m || !d) return ymd
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+export default async function OverviewPage({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams
+  const startParam = typeof sp.start === 'string' && sp.start ? sp.start : undefined
+  const endParam = typeof sp.end === 'string' && sp.end ? sp.end : undefined
+
+  // Default (no date filter) = current month; any From/To overrides it.
   const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const start = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
+  const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
   const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const end = `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`
+  const monthEnd = `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`
   const monthLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+  const hasRange = !!(startParam || endParam)
+  const start = hasRange ? startParam : monthStart
+  const end = hasRange ? endParam : monthEnd
+
+  const rangeLabel = !hasRange
+    ? monthLabel
+    : start && end
+      ? `${fmtDay(start)} – ${fmtDay(end)}`
+      : start
+        ? `from ${fmtDay(start)}`
+        : `until ${fmtDay(end!)}`
 
   const [{ data, error }, coachSales] = await Promise.all([
     getDashboard({ start, end }),
@@ -22,6 +46,11 @@ export default async function OverviewPage() {
   const { coaches, clients, sales, csat } = data
   const k = computeKpis(coaches, clients, sales, csat)
 
+  // Active clients split by plan group (roster — not date-scoped).
+  const activeGroup = (g: string) =>
+    clients.filter((c) => c.status === 'active' && planGroup(c.plan) === g).length
+  const activeSub = `Basic ${activeGroup('Learn Basic').toLocaleString('en-IN')} · Adv ${activeGroup('Learn Adv').toLocaleString('en-IN')}`
+
   // Top 3 coaches by this month's sales, across all coach types.
   const topOverall = topCoaches(coachSales, 3)
 
@@ -30,11 +59,12 @@ export default async function OverviewPage() {
 
   return (
     <>
-      <PageHeader title="Overview" subtitle={`Top-line LEANR performance · ${monthLabel}`} />
+      <PageHeader title="Overview" subtitle={`Top-line LEANR performance · ${rangeLabel}`} />
+      <DateRangeFilter />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Kpi label="Total revenue" value={formatINR(k.totalRevenue)} sub={`${k.totalSales} sales`} />
-        <Kpi label="Active clients" value={k.activeClients.toLocaleString('en-IN')} />
+        <Kpi label="Active clients" value={k.activeClients.toLocaleString('en-IN')} sub={activeSub} />
         <Kpi label="Avg CSAT" value={k.avgCsat.toFixed(2)} />
         <Kpi label="Avg weight lost" value={`${avgWeightLost(clients).toFixed(1)} kg`} />
         <Kpi label="Coaches" value={String(k.totalCoaches)} />
