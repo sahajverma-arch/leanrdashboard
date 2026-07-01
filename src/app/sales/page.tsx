@@ -65,18 +65,11 @@ export default async function SalesPage({ searchParams }: { searchParams: SP }) 
 
       <SalesView overall={overall} leanr={leanr} rangeLabel={rangeLabel} />
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <TopCoaches
-          title="Top teams"
-          subtitle={`Highest team sales · ${rangeLabel}`}
-          items={topTeamsList}
-        />
-      </div>
-
       <h2 className="mt-6 mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-        Top coaches by sales · {rangeLabel}
+        Top teams &amp; coaches by sales · {rangeLabel}
       </h2>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <TopCoaches title="Top teams" items={topTeamsList} />
         <TopCoaches title="Dietitians" items={topDietitians} />
         <TopCoaches title="PT Coaches" items={topPt} />
         <TopCoaches title="Basic Coaches" items={topBasic} />
