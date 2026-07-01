@@ -1,6 +1,6 @@
 import { getDashboard, getTopPerformerSales } from '@/lib/data'
 import { PageHeader, Kpi, SetupNotice, TopCoaches } from '@/components/ui'
-import { computeKpis, avgWeightLost, formatINR, planGroup } from '@/lib/dashboard'
+import { computeKpis, avgWeightLost, avgWeightLost15d, formatINR, planGroup } from '@/lib/dashboard'
 import { topPerformers, topTeams } from '@/lib/top-performers'
 import DateRangeFilter from '@/components/date-range-filter'
 
@@ -53,6 +53,11 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
   const activeBasic = activeGroup('Learn Basic')
   const activeAdv = activeGroup('Learn Adv')
 
+  // 15-day weight loss can be slightly negative in aggregate; treat a ~zero
+  // average as 0.0 so it never renders as "-0.0 kg".
+  const avg15 = avgWeightLost15d(clients)
+  const avg15Kg = `${(Math.abs(avg15) < 0.05 ? 0 : avg15).toFixed(1)} kg`
+
   // Top 3 coaches and top 3 teams by sales within the selected date range.
   const topOverall = topPerformers(topPerfRows, { start, end }, 3)
   const topTeamsList = topTeams(topPerfRows, { start, end }, 3)
@@ -71,7 +76,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
         <Kpi label="Adv active clients" value={activeAdv.toLocaleString('en-IN')} />
         <Kpi label="Avg CSAT" value={k.avgCsat.toFixed(2)} />
         <Kpi label="Avg weight lost" value={`${avgWeightLost(clients).toFixed(1)} kg`} />
-        <Kpi label="Coaches" value={String(k.totalCoaches)} />
+        <Kpi label="Avg weight lost (15d)" value={avg15Kg} />
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">

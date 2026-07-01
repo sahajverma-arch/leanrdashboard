@@ -15,6 +15,7 @@ export type Client = {
   plan: string | null
   status: string | null
   weight_lost_kg: number | null
+  weight_lost_15d_kg: number | null
 }
 export type Sale = {
   id: number
@@ -596,11 +597,18 @@ export function csatByMonth(csat: Csat[]): NameValue[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export function avgWeightLost(clients: Client[]): number {
-  const vals = clients
-    .map((c) => Number(c.weight_lost_kg))
-    .filter((v) => Number.isFinite(v))
+function avgNumeric(clients: Client[], pick: (c: Client) => number | null | undefined): number {
+  const vals = clients.map((c) => Number(pick(c))).filter((v) => Number.isFinite(v))
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
+}
+
+export function avgWeightLost(clients: Client[]): number {
+  return avgNumeric(clients, (c) => c.weight_lost_kg)
+}
+
+// Average of the "Weight_loss_in_Last_15_Days" column (recent momentum).
+export function avgWeightLost15d(clients: Client[]): number {
+  return avgNumeric(clients, (c) => c.weight_lost_15d_kg)
 }
 
 export type SaleRow = {
