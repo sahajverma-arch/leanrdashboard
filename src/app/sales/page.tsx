@@ -1,7 +1,7 @@
 import { getDashboard, getLeanrTeamSales, getTopPerformerSales } from '@/lib/data'
 import SalesView, { type SalesAgg } from '@/components/sales-view'
 import { PageHeader, SetupNotice, TopCoaches } from '@/components/ui'
-import { topPerformers, topTeams, topPerformersByType, ecodeKey } from '@/lib/top-performers'
+import { topTeams, topPerformersByType, ecodeKey } from '@/lib/top-performers'
 import { resolveDateRange } from '@/lib/date-range'
 import DateRangeFilter from '@/components/date-range-filter'
 
@@ -42,9 +42,9 @@ export default async function SalesPage({ searchParams }: { searchParams: SP }) 
     reference: ltRows.reduce((sum, l) => sum + (l.reference || 0), 0),
   }
 
-  // Top performers / teams within the date range (from top_performer_sales).
+  // Top teams within the date range (from top_performer_sales). The overall
+  // top-coach list lives on the Overview; here it's the by-type split below.
   const range = { start, end }
-  const topOverall = topPerformers(topPerfRows, range, 3)
   const topTeamsList = topTeams(topPerfRows, range, 3)
 
   // Coach type ('pt'|'basic'|'dietitian') keyed by employee code, from the
@@ -66,12 +66,6 @@ export default async function SalesPage({ searchParams }: { searchParams: SP }) 
       <SalesView overall={overall} leanr={leanr} rangeLabel={rangeLabel} />
 
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <TopCoaches
-          title="Top performers"
-          subtitle={`Highest coach sales · ${rangeLabel}`}
-          items={topOverall}
-          showType
-        />
         <TopCoaches
           title="Top teams"
           subtitle={`Highest team sales · ${rangeLabel}`}
