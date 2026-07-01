@@ -48,16 +48,15 @@ export function parseTopPerformerSheet(values: CellValue[][]): TopPerformerRow[]
   return out
 }
 
-// Top N coaches by total sales within the [start, end] date range. Each coach's
-// per-month amounts are summed; the team is taken from that coach's latest row.
-// The team is returned in TopCoach.type so the Overview list shows it as the
-// per-row sub-line (falling through TYPE_LABEL, which passes unknown keys as-is).
-export function topPerformers(
+type CoachAgg = { team: string; amount: number; date: string }
+
+// Sum each coach's per-month amounts within the [start, end] date range. The
+// team is taken from that coach's latest in-range row.
+function aggregateByCoach(
   rows: TopPerformerRow[],
-  f: { start?: string; end?: string } = {},
-  n = 3,
-): TopCoach[] {
-  const byCoach = new Map<string, { team: string; amount: number; date: string }>()
+  f: { start?: string; end?: string },
+): Map<string, CoachAgg> {
+  const byCoach = new Map<string, CoachAgg>()
   for (const r of rows) {
     if (f.start && r.date < f.start) continue
     if (f.end && r.date > f.end) continue
@@ -69,11 +68,49 @@ export function topPerformers(
       byCoach.set(r.coach, { team: r.team, amount: r.amount, date: r.date })
     }
   }
-  return [...byCoach.entries()]
+  return byCoach
+}
+
+// Normalized employee code pulled from the trailing token of a 'Name ECODE'
+// string ("Ajay  E-058" -> "E058", "Arunima C0130" -> "C0130"). Used to match a
+// coach to their pt/basic/dietitian type in the roster, which the dated sheet
+// doesn't carry itself. Returns null when there's no code to key on.
+export function ecodeKey(name: string): string | null {
+  const m = /([A-Za-z]{0,2}-?\d+)\s*$/.exec(String(name).trim())
+  return m ? m[1].toUpperCase().replace(/[-\s]/g, '') : null
+}
+
+// Top N coaches by total sales within the date range, across all teams. The
+// team is returned in TopCoach.type so a list can show it as the per-row
+// sub-line (falling through TYPE_LABEL, which passes unknown keys as-is).
+export function topPerformers(
+  rows: TopPerformerRow[],
+  f: { start?: string; end?: string } = {},
+  n = 3,
+): TopCoach[] {
+  return [...aggregateByCoach(rows, f).entries()]
     .filter(([, v]) => v.amount > 0)
     .sort((a, b) => b[1].amount - a[1].amount)
     .slice(0, n)
     .map(([coach, v]) => ({ name: coachDisplayName(coach), type: v.team, amount: v.amount }))
+}
+
+// Top N coaches of one type ('pt' | 'basic' | 'dietitian') by total sales within
+// the date range. Type is resolved per coach via `typeByEcode` (built from the
+// roster); coaches whose code isn't in the roster are skipped.
+export function topPerformersByType(
+  rows: TopPerformerRow[],
+  typeByEcode: Map<string, string>,
+  type: string,
+  f: { start?: string; end?: string } = {},
+  n = 3,
+): TopCoach[] {
+  return [...aggregateByCoach(rows, f).entries()]
+    .map(([coach, v]) => ({ coach, v, t: typeByEcode.get(ecodeKey(coach) ?? '') }))
+    .filter((x) => x.v.amount > 0 && x.t === type)
+    .sort((a, b) => b.v.amount - a.v.amount)
+    .slice(0, n)
+    .map((x) => ({ name: coachDisplayName(x.coach), type: x.t as string, amount: x.v.amount }))
 }
 
 // Top N teams by total sales within the [start, end] date range — every coach's

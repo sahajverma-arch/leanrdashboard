@@ -2,41 +2,17 @@ import { getDashboard, getTopPerformerSales } from '@/lib/data'
 import { PageHeader, Kpi, SetupNotice, TopCoaches } from '@/components/ui'
 import { computeKpis, avgWeightLost, avgWeightLost15d, formatINR, planGroup } from '@/lib/dashboard'
 import { topPerformers, topTeams } from '@/lib/top-performers'
+import { resolveDateRange } from '@/lib/date-range'
 import DateRangeFilter from '@/components/date-range-filter'
 
 export const dynamic = 'force-dynamic'
 
 type SP = Promise<Record<string, string | string[] | undefined>>
 
-const pad = (n: number) => String(n).padStart(2, '0')
-const fmtDay = (ymd: string) => {
-  const [y, m, d] = ymd.split('-').map(Number)
-  if (!y || !m || !d) return ymd
-  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 export default async function OverviewPage({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams
-  const startParam = typeof sp.start === 'string' && sp.start ? sp.start : undefined
-  const endParam = typeof sp.end === 'string' && sp.end ? sp.end : undefined
-
   // Default (no date filter) = current month; any From/To overrides it.
-  const now = new Date()
-  const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const monthEnd = `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`
-  const monthLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
-  const hasRange = !!(startParam || endParam)
-  const start = hasRange ? startParam : monthStart
-  const end = hasRange ? endParam : monthEnd
-
-  const rangeLabel = !hasRange
-    ? monthLabel
-    : start && end
-      ? `${fmtDay(start)} – ${fmtDay(end)}`
-      : start
-        ? `from ${fmtDay(start)}`
-        : `until ${fmtDay(end!)}`
+  const { start, end, rangeLabel } = resolveDateRange(sp)
 
   const [{ data, error }, topPerfRows] = await Promise.all([
     getDashboard({ start, end }),
