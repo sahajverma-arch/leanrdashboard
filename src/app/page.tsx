@@ -1,6 +1,7 @@
-import { getDashboard, getCoachMonthSales } from '@/lib/data'
+import { getDashboard, getTopPerformerSales } from '@/lib/data'
 import { PageHeader, Kpi, SetupNotice, TopCoaches } from '@/components/ui'
-import { computeKpis, avgWeightLost, formatINR, topCoaches, planGroup } from '@/lib/dashboard'
+import { computeKpis, avgWeightLost, formatINR, planGroup } from '@/lib/dashboard'
+import { topPerformers } from '@/lib/top-performers'
 import DateRangeFilter from '@/components/date-range-filter'
 
 export const dynamic = 'force-dynamic'
@@ -37,9 +38,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
         ? `from ${fmtDay(start)}`
         : `until ${fmtDay(end!)}`
 
-  const [{ data, error }, coachSales] = await Promise.all([
+  const [{ data, error }, topPerfRows] = await Promise.all([
     getDashboard({ start, end }),
-    getCoachMonthSales(),
+    getTopPerformerSales(),
   ])
   if (!data) return <SetupNotice error={error} />
 
@@ -52,8 +53,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
   const activeBasic = activeGroup('Learn Basic')
   const activeAdv = activeGroup('Learn Adv')
 
-  // Top 3 coaches by this month's sales, across all coach types.
-  const topOverall = topCoaches(coachSales, 3)
+  // Top 3 coaches by sales within the selected date range, across all teams.
+  const topOverall = topPerformers(topPerfRows, { start, end }, 3)
 
   // Coach counts by type, from the coach sheets (roster — not month-scoped).
   const countByType = (t: string) => coaches.filter((c) => c.type === t).length
@@ -81,7 +82,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
       <div className="mt-3">
         <TopCoaches
           title="Top performers"
-          subtitle={`Highest coach sales · ${monthLabel}`}
+          subtitle={`Highest coach sales · ${rangeLabel}`}
           items={topOverall}
           showType
         />

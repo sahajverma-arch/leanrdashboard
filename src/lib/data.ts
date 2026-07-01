@@ -4,6 +4,7 @@ import { SPREADSHEET_ID } from './sync/sources'
 import type { Coach, Client, Sale, CsatStats, CoachSale, TargetRow } from './dashboard'
 import type { OverallSaleRow } from './teamwise'
 import { parseOpportunitySheet, type OpportunityData } from './opportunity'
+import { parseTopPerformerSheet, type TopPerformerRow } from './top-performers'
 import {
   type Filters,
   type FilterOptions,
@@ -221,6 +222,19 @@ export async function getCoachTeamOpportunity(): Promise<OpportunityData> {
     return parseOpportunitySheet(values)
   } catch {
     return { coaches: [], teams: [] }
+  }
+}
+
+// Date-stamped per-coach sales (from the "top_performer_sales" tab), read live
+// via the service account (small, ~300 rows). Powers the Overview "Top
+// performers" widget; the page aggregates + filters these by date range.
+export async function getTopPerformerSales(): Promise<TopPerformerRow[]> {
+  if (!SPREADSHEET_ID) return []
+  try {
+    const values = await readRange(SPREADSHEET_ID, "'top_performer_sales'!A1:D")
+    return parseTopPerformerSheet(values)
+  } catch {
+    return []
   }
 }
 
