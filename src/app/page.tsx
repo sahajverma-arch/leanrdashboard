@@ -49,7 +49,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
   // Active clients split by plan group (roster — not date-scoped).
   const activeGroup = (g: string) =>
     clients.filter((c) => c.status === 'active' && planGroup(c.plan) === g).length
-  const activeSub = `Basic ${activeGroup('Learn Basic').toLocaleString('en-IN')} · Adv ${activeGroup('Learn Adv').toLocaleString('en-IN')}`
+  const activeBasic = activeGroup('Learn Basic')
+  const activeAdv = activeGroup('Learn Adv')
 
   // Top 3 coaches by this month's sales, across all coach types.
   const topOverall = topCoaches(coachSales, 3)
@@ -64,11 +65,11 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Kpi label="Total revenue" value={formatINR(k.totalRevenue)} sub={`${k.totalSales} sales`} />
-        <Kpi label="Active clients" value={k.activeClients.toLocaleString('en-IN')} sub={activeSub} />
+        <Kpi label="Basic active clients" value={activeBasic.toLocaleString('en-IN')} />
+        <Kpi label="Adv active clients" value={activeAdv.toLocaleString('en-IN')} />
         <Kpi label="Avg CSAT" value={k.avgCsat.toFixed(2)} />
         <Kpi label="Avg weight lost" value={`${avgWeightLost(clients).toFixed(1)} kg`} />
         <Kpi label="Coaches" value={String(k.totalCoaches)} />
-        <Kpi label="Clients" value={String(k.totalClients)} />
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
