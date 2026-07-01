@@ -75,3 +75,25 @@ export function topPerformers(
     .slice(0, n)
     .map(([coach, v]) => ({ name: coachDisplayName(coach), type: v.team, amount: v.amount }))
 }
+
+// Top N teams by total sales within the [start, end] date range — every coach's
+// amount rolled up to their Team. Returned as TopCoach so the Overview can reuse
+// the ranked-list component (team name in `name`, no per-row type sub-line).
+export function topTeams(
+  rows: TopPerformerRow[],
+  f: { start?: string; end?: string } = {},
+  n = 3,
+): TopCoach[] {
+  const byTeam = new Map<string, number>()
+  for (const r of rows) {
+    if (f.start && r.date < f.start) continue
+    if (f.end && r.date > f.end) continue
+    if (!r.team) continue
+    byTeam.set(r.team, (byTeam.get(r.team) ?? 0) + r.amount)
+  }
+  return [...byTeam.entries()]
+    .filter(([, amount]) => amount > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([team, amount]) => ({ name: team, type: '', amount }))
+}

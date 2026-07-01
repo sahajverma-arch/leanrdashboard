@@ -1,7 +1,7 @@
 import { getDashboard, getTopPerformerSales } from '@/lib/data'
 import { PageHeader, Kpi, SetupNotice, TopCoaches } from '@/components/ui'
 import { computeKpis, avgWeightLost, formatINR, planGroup } from '@/lib/dashboard'
-import { topPerformers } from '@/lib/top-performers'
+import { topPerformers, topTeams } from '@/lib/top-performers'
 import DateRangeFilter from '@/components/date-range-filter'
 
 export const dynamic = 'force-dynamic'
@@ -53,8 +53,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
   const activeBasic = activeGroup('Learn Basic')
   const activeAdv = activeGroup('Learn Adv')
 
-  // Top 3 coaches by sales within the selected date range, across all teams.
+  // Top 3 coaches and top 3 teams by sales within the selected date range.
   const topOverall = topPerformers(topPerfRows, { start, end }, 3)
+  const topTeamsList = topTeams(topPerfRows, { start, end }, 3)
 
   // Coach counts by type, from the coach sheets (roster — not month-scoped).
   const countByType = (t: string) => coaches.filter((c) => c.type === t).length
@@ -79,12 +80,17 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
         <Kpi label="Basic Coaches" value={String(countByType('basic'))} sub="diet & exercise consultation" />
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
         <TopCoaches
           title="Top performers"
           subtitle={`Highest coach sales · ${rangeLabel}`}
           items={topOverall}
           showType
+        />
+        <TopCoaches
+          title="Top teams"
+          subtitle={`Highest team sales · ${rangeLabel}`}
+          items={topTeamsList}
         />
       </div>
     </>
