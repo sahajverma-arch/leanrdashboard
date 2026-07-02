@@ -33,8 +33,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: SP 
   const pausedBasic = statusGroup('paused', 'Learn Basic')
   const pausedAdv = statusGroup('paused', 'Learn Adv')
 
-  // 15-day weight loss can be slightly negative in aggregate; treat a ~zero
-  // average as 0.0 so it never renders as "-0.0 kg".
+  // Averages only clients with a positive 15-day loss; a ~zero average still
+  // renders as 0.0 (never "-0.0 kg").
   const avg15 = avgWeightLost15d(clients)
   const avg15Kg = `${(Math.abs(avg15) < 0.05 ? 0 : avg15).toFixed(1)} kg`
 

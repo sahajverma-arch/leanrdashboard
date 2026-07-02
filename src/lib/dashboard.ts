@@ -607,8 +607,13 @@ export function avgWeightLost(clients: Client[]): number {
 }
 
 // Average of the "Weight_loss_in_Last_15_Days" column (recent momentum).
+// Only counts clients with a positive value — zero/negative entries are
+// excluded from both the numerator and the client count.
 export function avgWeightLost15d(clients: Client[]): number {
-  return avgNumeric(clients, (c) => c.weight_lost_15d_kg)
+  const vals = clients
+    .map((c) => Number(c.weight_lost_15d_kg))
+    .filter((v) => Number.isFinite(v) && v > 0)
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
 }
 
 export type SaleRow = {
