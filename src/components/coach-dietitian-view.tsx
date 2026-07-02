@@ -108,14 +108,30 @@ function CoachTable({ rows, isPt }: { rows: CoachStatusRow[]; isPt: boolean }) {
 
 export default function CoachDietitianView({ data }: { data: CoachViewData }) {
   const [tab, setTab] = useState<TabKey>('dietitians')
+  const [ptType, setPtType] = useState<string>('all') // Part Time / Full Time filter (PT tab only)
 
   const rowsFor: Record<TabKey, CoachStatusRow[]> = {
     dietitians: data.dietitians,
     core: data.core,
     pt: data.pt,
   }
-  const rows = rowsFor[tab]
   const active = TABS.find((t) => t.key === tab)!
+
+  // Distinct PT employment types (+ counts) for the filter pills.
+  const ptTypes = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of data.pt) m.set(r.status || 'Unknown', (m.get(r.status || 'Unknown') ?? 0) + 1)
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [data.pt])
+
+  // On the PT tab, narrow to the selected employment type; the KPIs and table
+  // both derive from `rows`, so they follow the filter automatically.
+  const rows = useMemo(() => {
+    const base = tab === 'dietitians' ? data.dietitians : tab === 'core' ? data.core : data.pt
+    return tab === 'pt' && ptType !== 'all'
+      ? base.filter((r) => (r.status || 'Unknown') === ptType)
+      : base
+  }, [tab, ptType, data])
   const t = useMemo(() => totals(rows), [rows])
 
   return (
@@ -134,7 +150,10 @@ export default function CoachDietitianView({ data }: { data: CoachViewData }) {
           return (
             <button
               key={tb.key}
-              onClick={() => setTab(tb.key)}
+              onClick={() => {
+                setTab(tb.key)
+                setPtType('all')
+              }}
               aria-pressed={on}
               className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                 on
@@ -150,6 +169,37 @@ export default function CoachDietitianView({ data }: { data: CoachViewData }) {
           )
         })}
       </div>
+
+      {/* Employment-type filter — PT Coaches tab only */}
+      {tab === 'pt' && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            Type
+          </span>
+          {[{ value: 'all', label: 'All', n: data.pt.length }]
+            .concat(ptTypes.map(([s, n]) => ({ value: s, label: s, n })))
+            .map((p) => {
+              const on = ptType === p.value
+              return (
+                <button
+                  key={p.value}
+                  onClick={() => setPtType(p.value)}
+                  aria-pressed={on}
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                    on
+                      ? 'bg-blue-600 text-white'
+                      : 'border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  {p.label}{' '}
+                  <span className={on ? 'text-blue-100' : 'text-zinc-400 dark:text-zinc-500'}>
+                    {p.n}
+                  </span>
+                </button>
+              )
+            })}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi label={active.noun} value={String(rows.length)} />
