@@ -6,6 +6,11 @@ import type { OverallSaleRow } from './teamwise'
 import { parseOpportunitySheet, type OpportunityData } from './opportunity'
 import { parseTopPerformerSheet, type TopPerformerRow } from './top-performers'
 import {
+  parseCoachStatusSheet,
+  parsePtCoachSheet,
+  type CoachStatusRow,
+} from './coach-bandwidth'
+import {
   type Filters,
   type FilterOptions,
   filterClients,
@@ -235,6 +240,34 @@ export async function getTopPerformerSales(): Promise<TopPerformerRow[]> {
     return parseTopPerformerSheet(values)
   } catch {
     return []
+  }
+}
+
+export type CoachViewData = {
+  dietitians: CoachStatusRow[]
+  core: CoachStatusRow[]
+  pt: CoachStatusRow[]
+}
+
+// Per-coach client load (Active / Pause / CNR) read live from the three roster
+// tabs via the service account. These are small sheets (~20-60 rows each), so we
+// read them at request time rather than mirroring into Postgres — same pattern
+// as getCoachTeamOpportunity / getTopPerformerSales.
+export async function getCoachViewData(): Promise<CoachViewData> {
+  if (!SPREADSHEET_ID) return { dietitians: [], core: [], pt: [] }
+  try {
+    const [diet, core, pt] = await Promise.all([
+      readRange(SPREADSHEET_ID, "'LeanR Dietitian'!A1:F400"),
+      readRange(SPREADSHEET_ID, "'Core_Coaches_Followups'!A1:F400"),
+      readRange(SPREADSHEET_ID, "'LeanR PT Coaches'!A1:G400"),
+    ])
+    return {
+      dietitians: parseCoachStatusSheet(diet),
+      core: parseCoachStatusSheet(core),
+      pt: parsePtCoachSheet(pt),
+    }
+  } catch {
+    return { dietitians: [], core: [], pt: [] }
   }
 }
 

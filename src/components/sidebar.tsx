@@ -14,6 +14,7 @@ const LINKS = [
   { href: '/opportunity', label: 'Renewal opportunity' },
   { href: '/opportunities', label: 'Opportunity' },
   { href: '/coaches', label: 'Coaches' },
+  { href: '/coach-view', label: 'Coach & Dietitian view' },
   { href: '/clients', label: 'Clients' },
   { href: '/csat', label: 'CSAT' },
 ]
