@@ -12,7 +12,6 @@ import {
   type TargetRow,
 } from '@/lib/dashboard'
 import type { TeamMember } from '@/lib/data'
-import { Kpi } from '@/components/ui'
 import { catLabel, catTagClass } from '@/lib/category'
 
 function monthLabel(ym: string): string {
@@ -186,14 +185,7 @@ export default function OpportunityView({
         })}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Renewal opportunities" value={String(totals.opp)} />
-        <Kpi label="Converted" value={String(totals.conv)} />
-        <Kpi label="Conversion" value={pct(totals.conv, totals.opp)} />
-        <Kpi label="Teams" value={String(shown.length)} />
-      </div>
-
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
