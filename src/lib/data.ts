@@ -3,7 +3,12 @@ import { readRange } from '@/lib/google/sheets'
 import { SPREADSHEET_ID } from './sync/sources'
 import type { Coach, Client, Sale, CsatStats, CoachSale, TargetRow } from './dashboard'
 import type { OverallSaleRow } from './teamwise'
-import { parseOpportunitySheet, type OpportunityData } from './opportunity'
+import {
+  parseOpportunitySheet,
+  parseOpportunitySummary,
+  type OpportunityData,
+  type OpportunitySummary,
+} from './opportunity'
 import { parseTopPerformerSheet, type TopPerformerRow } from './top-performers'
 import {
   parseCoachStatusSheet,
@@ -227,6 +232,19 @@ export async function getCoachTeamOpportunity(): Promise<OpportunityData> {
     return parseOpportunitySheet(values)
   } catch {
     return { coaches: [], teams: [] }
+  }
+}
+
+// Pre-aggregated opportunity summary (Renewal / Part Payment / Extension /
+// Referral / Reactivation) read live from cols V–Y of the same "opportunity"
+// tab via the service account. Returns null if the sheet can't be read.
+export async function getOpportunitySummary(): Promise<OpportunitySummary | null> {
+  if (!SPREADSHEET_ID) return null
+  try {
+    const values = await readRange(SPREADSHEET_ID, "'opportunity'!A1:Y30")
+    return parseOpportunitySummary(values)
+  } catch {
+    return null
   }
 }
 

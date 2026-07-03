@@ -73,3 +73,97 @@ export function oppTotals(rows: OppStat[]) {
     { renewalOpp: 0, renewalConv: 0, extOpp: 0, extConv: 0 },
   )
 }
+
+// ── Opportunity summary (cols V–Y of the same 'opportunity' tab) ────────────────
+// A separate pre-aggregated block on the right of the sheet, one row per
+// opportunity type. Read by absolute cell reference (the sheet's own layout), so
+// these must track the sheet if it's ever restructured:
+//   Renewal      V4=opps  W4=conversions  X4=advance pmts  Y4=continuation
+//   Part Payment V7=opps  W7=conversions                    (rate computed)
+//   Extension    V11=opps W11=conversions X11=rate
+//   Referral     V16=opps W16=conversions X16=rate
+//   Reactivation V21=opps W21=conversions X21=rate
+
+// Total / conversions / conversion-rate (%), the shape shared by the last four
+// sections. Renewal has extra columns, so it gets its own type below.
+export type OppTypeStat = {
+  total: number
+  conversions: number
+  rate: number | null // percentage 0–100, or null when not derivable
+}
+
+export type OpportunitySummary = {
+  renewal: {
+    total: number
+    conversions: number
+    advancePayments: number
+    continuation: number
+    rate: number | null
+  }
+  partPayment: OppTypeStat
+  extension: OppTypeStat
+  referral: OppTypeStat
+  reactivation: OppTypeStat
+}
+
+// 0-based column indices for the summary block.
+const COL = { V: 21, W: 22, X: 23, Y: 24 }
+
+// Cell at a 1-based row / column index, matching the sheet's own A1 references.
+const at = (values: CellValue[][], row: number, col: number): CellValue =>
+  values[row - 1]?.[col] ?? null
+
+// The X-column conversion rates are stored as fractions (0.1404 = 14.04%). Return
+// a percentage 0–100, or null when the cell is blank. A value already > 1 is kept
+// as-is, so a future "14.04" entered directly as a percent also renders correctly.
+const ratePct = (v: CellValue): number | null => {
+  const s = String(v ?? '').trim()
+  if (s === '') return null
+  const n = Number(s.replace(/[^0-9.\-]/g, ''))
+  if (!Number.isFinite(n)) return null
+  return n <= 1 ? n * 100 : n
+}
+
+export function parseOpportunitySummary(values: CellValue[][]): OpportunitySummary {
+  const renewalTotal = num(at(values, 4, COL.V)) // V4
+  const renewalConv = num(at(values, 4, COL.W)) // W4
+  const ppTotal = num(at(values, 7, COL.V)) // V7
+  const ppConv = num(at(values, 7, COL.W)) // W7
+  const extTotal = num(at(values, 11, COL.V)) // V11
+  const extConv = num(at(values, 11, COL.W)) // W11
+  const refTotal = num(at(values, 16, COL.V)) // V16
+  const refConv = num(at(values, 16, COL.W)) // W16
+  const reacTotal = num(at(values, 21, COL.V)) // V21
+  const reacConv = num(at(values, 21, COL.W)) // W21
+
+  return {
+    renewal: {
+      total: renewalTotal,
+      conversions: renewalConv,
+      advancePayments: num(at(values, 4, COL.X)), // X4
+      continuation: num(at(values, 4, COL.Y)), // Y4
+      rate: convPct(renewalConv, renewalTotal),
+    },
+    partPayment: {
+      total: ppTotal,
+      conversions: ppConv,
+      rate: convPct(ppConv, ppTotal), // no rate column — always computed
+    },
+    extension: {
+      total: extTotal,
+      conversions: extConv,
+      rate: ratePct(at(values, 11, COL.X)) ?? convPct(extConv, extTotal), // X11
+    },
+    referral: {
+      total: refTotal,
+      conversions: refConv,
+      // X16 (0.1404 → 14.04%) if present; the spec's fixed 14.04% otherwise.
+      rate: ratePct(at(values, 16, COL.X)) ?? 14.04,
+    },
+    reactivation: {
+      total: reacTotal,
+      conversions: reacConv,
+      rate: ratePct(at(values, 21, COL.X)) ?? convPct(reacConv, reacTotal), // X21
+    },
+  }
+}
