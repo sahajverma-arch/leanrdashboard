@@ -265,9 +265,11 @@ type CoachTargetRow = {
   reactivation_target: number
 }
 
-// "Coach Wise Target" has blank spacer columns between groups and messy headers,
-// so we read it BY COLUMN POSITION: A=team, B=category, C=coach, D=total target,
-// H=renewal target, M=extension target, R=referral target, U=reactivation target.
+// "Coach Wise Target" has blank spacer columns between groups and several
+// opportunity-count columns before each target amount, so we read it BY COLUMN
+// POSITION. Each group is "…Opportunities…" counts followed by a "…Targets" ₹
+// amount: A=team, B=category, C=coach, D=total target, then the four target
+// amounts I=renewal, N=extension, S=referral, V=reactivation (their sum = D).
 function parseCoachTargets(values: CellValue[][]): CoachTargetRow[] {
   const out: CoachTargetRow[] = []
   const num = (x: CellValue) => {
@@ -283,18 +285,18 @@ function parseCoachTargets(values: CellValue[][]): CoachTargetRow[] {
       team,
       category: String(row[1] ?? '').trim(), // B
       coach,
-      total_target: num(row[3]), // D
-      renewal_target: num(row[7]), // H
-      extension_target: num(row[12]), // M
-      referral_target: num(row[17]), // R
-      reactivation_target: num(row[20]), // U
+      total_target: num(row[3]), // D  Total Target
+      renewal_target: num(row[8]), // I  Renewal Targets
+      extension_target: num(row[13]), // N  ExtensionTargets
+      referral_target: num(row[18]), // S  Refferal Targets
+      reactivation_target: num(row[21]), // V  ReactivationTargets
     })
   }
   return out
 }
 
 async function syncCoachTargets(supabase: Admin): Promise<SourceResult> {
-  const values = await readRange(SPREADSHEET_ID, a1('Coach Wise Target', 'A1:U'))
+  const values = await readRange(SPREADSHEET_ID, a1('Coach Wise Target', 'A1:V'))
   const rows = parseCoachTargets(values)
   const { error: delErr } = await supabase.from('raw_coach_targets').delete().gte('id', 0)
   if (delErr) throw new Error(delErr.message)

@@ -10,10 +10,10 @@ create table if not exists raw_coach_targets (
   category text,                         -- col B: coach category
   coach text,                            -- col C: 'Name ECODE'
   total_target double precision,         -- col D: total target (₹) = sum of the four below
-  renewal_target double precision,       -- col H
-  extension_target double precision,     -- col M
-  referral_target double precision,      -- col R
-  reactivation_target double precision,  -- col U
+  renewal_target double precision,       -- col I: Renewal Targets
+  extension_target double precision,     -- col N: ExtensionTargets
+  referral_target double precision,      -- col S: Refferal Targets
+  reactivation_target double precision,  -- col V: ReactivationTargets
   synced_at timestamptz not null default now()
 );
 
