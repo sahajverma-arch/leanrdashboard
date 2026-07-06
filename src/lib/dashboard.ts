@@ -263,6 +263,10 @@ const targetNum = (x: number | null | undefined) => {
   return Number.isFinite(n) ? n : 0
 }
 
+// Business rule: Renewal & Extension targets are trimmed by 30%. The Total target
+// drops by the same removed amount so each row still adds up consistently.
+const RENEWAL_EXTENSION_CUT = 0.3
+
 // Group per-coach target rows by team, summing each target column and keeping the
 // member list (for the expandable rows). Teams and members are sorted by total ₹.
 export function teamTargets(rows: TargetRow[]): TeamTarget[] {
@@ -271,15 +275,18 @@ export function teamTargets(rows: TargetRow[]): TeamTarget[] {
     const team = String(r.team ?? '').trim()
     const coach = String(r.coach ?? '').trim()
     if (!team || !coach) continue
+    const rawRenewal = targetNum(r.renewal_target)
+    const rawExtension = targetNum(r.extension_target)
+    const removed = RENEWAL_EXTENSION_CUT * (rawRenewal + rawExtension)
     const member: CoachTarget = {
       coach,
       name: coachDisplayName(coach),
       category: String(r.category ?? '').trim(),
-      renewal: targetNum(r.renewal_target),
-      extension: targetNum(r.extension_target),
+      renewal: Math.round(rawRenewal * (1 - RENEWAL_EXTENSION_CUT)),
+      extension: Math.round(rawExtension * (1 - RENEWAL_EXTENSION_CUT)),
       referral: targetNum(r.referral_target),
       reactivation: targetNum(r.reactivation_target),
-      total: targetNum(r.total_target),
+      total: Math.round(targetNum(r.total_target) - removed),
     }
     const e =
       map.get(team) ??
