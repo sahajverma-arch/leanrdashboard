@@ -267,9 +267,10 @@ type CoachTargetRow = {
 
 // "Coach Wise Target" has blank spacer columns between groups and several
 // opportunity-count columns before each target amount, so we read it BY COLUMN
-// POSITION. Each group is "…Opportunities…" counts followed by a "…Targets" ₹
-// amount: A=team, B=category, C=coach, D=total target, then the four target
-// amounts I=renewal, N=extension, S=referral, V=reactivation (their sum = D).
+// POSITION. Each group is "…Opportunities…" counts, then a "…Targets" ₹ amount,
+// then a blank spacer column: A=team, B=category, C=coach, D=total target, then
+// the four target amounts H=renewal, M=extension, R=referral, U=reactivation
+// (their sum = D). The spacer columns I/N/S/V after each target are blank.
 function parseCoachTargets(values: CellValue[][]): CoachTargetRow[] {
   const out: CoachTargetRow[] = []
   const num = (x: CellValue) => {
@@ -286,10 +287,10 @@ function parseCoachTargets(values: CellValue[][]): CoachTargetRow[] {
       category: String(row[1] ?? '').trim(), // B
       coach,
       total_target: num(row[3]), // D  Total Target
-      renewal_target: num(row[8]), // I  Renewal Targets
-      extension_target: num(row[13]), // N  ExtensionTargets
-      referral_target: num(row[18]), // S  Refferal Targets
-      reactivation_target: num(row[21]), // V  ReactivationTargets
+      renewal_target: num(row[7]), // H  Renewal Targets
+      extension_target: num(row[12]), // M  ExtensionTargets
+      referral_target: num(row[17]), // R  Refferal Targets
+      reactivation_target: num(row[20]), // U  ReactivationTargets
     })
   }
   return out
