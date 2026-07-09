@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/sidebar";
+import SplashScreen from "@/components/splash-screen";
 import { ThemeProvider, NO_FLASH_SCRIPT } from "@/components/theme-provider";
 
 const geistSans = Geist({
@@ -36,6 +37,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
       <body className="min-h-full">
+        {/* Brand intro overlay — renders in the initial HTML so it covers the
+            page immediately, then animates and removes itself. */}
+        <SplashScreen />
         <ThemeProvider>
           <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 md:flex-row dark:bg-zinc-950 dark:text-zinc-100">
             <Suspense>
